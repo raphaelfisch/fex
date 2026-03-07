@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>FEX – Mein Training</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --border: #e2e0da;
+    --text: #1a1a1a;
+    --text-sec: #6b6860;
+    --text-ter: #a09e99;
+    --green: #2d6a4f;
+    --green-light: #e8f4ee;
+    --orange: #c05c1a;
+    --orange-light: #fdf0e6;
+    --blue: #1a4a7a;
+    --blue-light: #e6eef8;
+    --accent: #1a1a1a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+  }
+
+  /* =====================
+     SCREENS
+  ===================== */
+  .screen { display: none; min-height: 100vh; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  /* =====================
+     LOGIN SCREEN
+  ===================== */
+  #loginScreen {
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: var(--bg);
+  }
+
+  .login-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 40px 36px;
+    width: 100%;
+    max-width: 380px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .login-header { text-align: center; }
+
+  .login-logo {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .login-subtitle {
+    font-size: 0.85rem;
+    color: var(--text-ter);
+  }
+
+  .login-form { display: flex; flex-direction: column; gap: 12px; }
+
+  .input-group { display: flex; flex-direction: column; gap: 6px; }
+
+  .input-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-sec);
+    letter-spacing: 0.02em;
+  }
+
+  .input-field {
+    padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .input-field:focus { border-color: var(--text); background: #fff; }
+
+  .login-btn {
+    padding: 14px;
+    background: var(--text);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    margin-top: 4px;
+  }
+
+  .login-btn:active { transform: scale(0.98); opacity: 0.9; }
+
+  .login-error {
+    font-size: 0.8rem;
+    color: #b03030;
+    text-align: center;
+    display: none;
+  }
+
+  .login-error.show { display: block; }
+
+  .login-hint {
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--text-ter);
+  }
+
+  /* =====================
+     HOME SCREEN
+  ===================== */
+  #homeScreen {
+    background: var(--bg);
+  }
+
+  /* TOPBAR */
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+
+  .topbar-logo { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; }
+
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+
+  .streak-pill {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--orange-light);
+    border: 1px solid #f5c89a;
+    border-radius: 20px;
+    padding: 5px 11px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--orange);
+  }
+
+  .logout-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    color: var(--text-sec);
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .logout-btn:hover { background: var(--bg); }
+
+  /* CONTENT */
+  .home-content {
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    max-width: 600px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  /* GREETING */
+  .greeting-block { }
+
+  .greeting-text {
+    font-size: clamp(1.5rem, 5vw, 2rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    line-height: 1.2;
+  }
+
+  .greeting-sub {
+    font-size: 0.9rem;
+    color: var(--text-sec);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+
+  /* STATS ROW */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .stat-mini {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 14px;
+    text-align: center;
+  }
+
+  .stat-mini-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .stat-mini-label {
+    font-size: 0.68rem;
+    color: var(--text-ter);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* SESSION LIMIT */
+  .session-bar-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .session-bar-label {
+    font-size: 0.8rem;
+    color: var(--text-sec);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .session-dots {
+    display: flex;
+    gap: 8px;
+    flex: 1;
+  }
+
+  .session-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+  }
+
+  .session-dot.done {
+    background: var(--text);
+    border-color: var(--text);
+    color: #fff;
+  }
+
+  .session-dot.current {
+    border-color: var(--orange);
+    background: var(--orange-light);
+  }
+
+  .session-remaining {
+    font-size: 0.75rem;
+    color: var(--text-ter);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* SECTION TITLE */
+  .section-title {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-ter);
+    margin-bottom: -10px;
+  }
+
+  /* GAME CARDS */
+  .game-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .game-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 16px;
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .game-card:hover {
+    border-color: var(--text);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+  }
+
+  .game-card:active { transform: scale(0.99); }
+
+  .game-card.highlight {
+    border-color: var(--text);
+    background: #fff;
+  }
+
+  .game-card.highlight::before {
+    content: 'Empfohlen';
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    font-size: 0.62rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2px 8px;
+  }
+
+  .game-emoji {
+    font-size: 1.8rem;
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .game-info { flex: 1; min-width: 0; }
+
+  .game-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 3px;
+  }
+
+  .game-ef {
+    font-size: 0.75rem;
+    color: var(--text-ter);
+    margin-bottom: 8px;
+  }
+
+  .game-level-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .game-level-bar-bg {
+    flex: 1;
+    height: 4px;
+    background: var(--bg);
+    border-radius: 3px;
+    overflow: hidden;
+    max-width: 120px;
+  }
+
+  .game-level-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--text);
+  }
+
+  .game-level-label {
+    font-size: 0.7rem;
+    color: var(--text-sec);
+    font-family: 'DM Mono', monospace;
+    white-space: nowrap;
+  }
+
+  .game-arrow {
+    font-size: 1.1rem;
+    color: var(--text-ter);
+    flex-shrink: 0;
+  }
+
+  /* MODE MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    z-index: 100;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal-sheet {
+    background: var(--surface);
+    border-radius: 20px 20px 0 0;
+    padding: 28px 24px 40px;
+    width: 100%;
+    max-width: 500px;
+    animation: slideUp 0.22s ease;
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .modal-handle {
+    width: 36px; height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 0 auto 20px;
+  }
+
+  .modal-game-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .modal-game-ef {
+    font-size: 0.8rem;
+    color: var(--text-ter);
+    margin-bottom: 20px;
+  }
+
+  .modal-mode-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .mode-btn {
+    padding: 16px 20px;
+    border-radius: 14px;
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .mode-btn:hover { border-color: var(--text); background: #fff; }
+  .mode-btn:active { transform: scale(0.99); }
+
+  .mode-btn.primary {
+    background: var(--text);
+    border-color: var(--text);
+    color: #fff;
+  }
+
+  .mode-btn-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 3px;
+  }
+
+  .mode-btn.primary .mode-btn-title { color: #fff; }
+  .mode-btn.primary .mode-btn-desc { color: rgba(255,255,255,0.65); }
+
+  .mode-btn-desc {
+    font-size: 0.78rem;
+    color: var(--text-sec);
+    line-height: 1.4;
+  }
+
+  .modal-level-info {
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: var(--green-light);
+    border: 1px solid #b5d9c5;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    color: var(--green);
+    line-height: 1.5;
+  }
+
+  .modal-cancel {
+    margin-top: 12px;
+    width: 100%;
+    padding: 12px;
+    background: none;
+    border: none;
+    font-size: 0.85rem;
+    color: var(--text-ter);
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  /* ÜBEN SECTION */
+  .ueben-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .ueben-section:hover { border-color: #999; }
+
+  .ueben-left { }
+  .ueben-title { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+  .ueben-desc { font-size: 0.78rem; color: var(--text-ter); margin-top: 3px; }
+  .ueben-arrow { font-size: 1.1rem; color: var(--text-ter); }
+
+  /* REFLEXION */
+  .reflex-prompt {
+    background: var(--blue-light);
+    border: 1px solid #b8d0ea;
+    border-radius: 14px;
+    padding: 18px 20px;
+  }
+
+  .reflex-title {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--blue);
+    margin-bottom: 8px;
+  }
+
+  .reflex-question {
+    font-size: 0.9rem;
+    color: var(--text);
+    line-height: 1.55;
+    margin-bottom: 12px;
+    font-style: italic;
+  }
+
+  .reflex-textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 10px 12px;
+    border: 1.5px solid #b8d0ea;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text);
+    background: #fff;
+    resize: none;
+    outline: none;
+    line-height: 1.5;
+  }
+
+  .reflex-textarea:focus { border-color: var(--blue); }
+
+  .reflex-send {
+    margin-top: 10px;
+    padding: 10px 20px;
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    float: right;
+  }
+
+  .reflex-send:active { opacity: 0.85; }
+
+  .reflex-sent {
+    display: none;
+    font-size: 0.82rem;
+    color: var(--green);
+    text-align: center;
+    padding: 8px;
+    font-weight: 500;
+  }
+
+  .footer-space { height: 40px; }
+
+  /* RESULT BLOCK */
+  .result-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 24px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+  .result-emoji { font-size: 2.8rem; }
+  .result-title { font-size: 1.2rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+  .result-stats { display: flex; gap: 16px; justify-content: center; width: 100%; }
+  .result-stat { flex: 1; background: var(--bg); border-radius: 10px; padding: 12px 8px; text-align: center; }
+  .result-stat-value { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.02em; color: var(--text); }
+  .result-stat-label { font-size: 0.63rem; color: var(--text-ter); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 3px; }
+  .result-message { font-size: 0.85rem; color: var(--green); font-weight: 500; background: var(--green-light); border-radius: 8px; padding: 8px 14px; width: 100%; }
+
+  /* REFLEX CARD FULL */
+  .reflex-card-full { background: var(--blue-light); border: 1px solid #b8d0ea; border-radius: 16px; padding: 22px 20px; display: flex; flex-direction: column; gap: 12px; }
+  .reflex-title-full { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--blue); }
+  .reflex-question-full { font-size: 0.95rem; color: var(--text); line-height: 1.55; font-style: italic; }
+  .reflex-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+  .reflex-skip { background: none; border: none; font-size: 0.82rem; color: var(--text-ter); cursor: pointer; font-family: "DM Sans", sans-serif; padding: 4px 0; }
+  .reflex-skip:hover { color: var(--text-sec); }
+  .reflex-send-btn { padding: 10px 22px; background: var(--blue); color: #fff; border: none; border-radius: 10px; font-size: 0.85rem; font-weight: 600; cursor: pointer; font-family: "DM Sans", sans-serif; }
+  .reflex-send-btn:active { opacity: 0.85; }
+
+  /* REFLEX DONE */
+  .reflex-done { display: none; flex-direction: column; align-items: center; gap: 10px; padding: 32px 24px; text-align: center; }
+  .reflex-done-icon { width: 52px; height: 52px; border-radius: 50%; background: var(--green-light); color: var(--green); font-size: 1.4rem; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .reflex-done-title { font-size: 1.2rem; font-weight: 700; color: var(--text); }
+  .reflex-done-sub { font-size: 0.85rem; color: var(--text-sec); }
+  .back-home-btn { margin-top: 12px; padding: 13px 32px; background: var(--text); color: #fff; border: none; border-radius: 12px; font-size: 0.95rem; font-weight: 600; cursor: pointer; font-family: "DM Sans", sans-serif; }
+  .back-home-btn:active { opacity: 0.85; }
+
+  /* RESPONSIVE */
+  @media (max-width: 400px) {
+    .login-box { padding: 32px 24px; }
+    .stats-row { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .stat-mini-value { font-size: 1.3rem; }
+    .game-emoji { width: 44px; height: 44px; font-size: 1.5rem; border-radius: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===================== LOGIN SCREEN ===================== -->
+<div class="screen active" id="loginScreen">
+  <div class="login-box">
+    <div class="login-header">
+      <div class="login-logo">FEX</div>
+      <div class="login-subtitle">Mein Kognitionstraining</div>
+    </div>
+    <div class="login-form">
+      <div class="input-group">
+        <div class="input-label">Benutzername</div>
+        <input class="input-field" type="text" id="usernameInput" placeholder="z.B. alina.b" autocomplete="username" autocapitalize="none">
+      </div>
+      <div class="input-group">
+        <div class="input-label">Passwort</div>
+        <input class="input-field" type="password" id="passwordInput" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <div class="login-error" id="loginError">Benutzername oder Passwort falsch.</div>
+      <button class="login-btn" onclick="doLogin()">Einloggen</button>
+    </div>
+    <div class="login-hint">Zugangsdaten erhältst du von deiner Lehrperson.</div>
+  </div>
+</div>
+
+<!-- ===================== HOME SCREEN ===================== -->
+<div class="screen" id="homeScreen">
+
+  <div class="topbar">
+    <div class="topbar-logo">FEX</div>
+    <div class="topbar-right">
+      <div class="streak-pill">🔥 <span id="streakCount">8</span> Tage</div>
+      <button class="logout-btn" onclick="doLogout()">Abmelden</button>
+    </div>
+  </div>
+
+  <div class="home-content">
+
+    <!-- GREETING -->
+    <div class="greeting-block">
+      <div class="greeting-text" id="greetingText">Hallo, Alina! 👋</div>
+      <div class="greeting-sub" id="greetingMessage">Heute hast du noch keine Session gemacht. Bereit für eine Runde?</div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-row">
+      <div class="stat-mini">
+        <div class="stat-mini-value">12</div>
+        <div class="stat-mini-label">Sessions</div>
+      </div>
+      <div class="stat-mini">
+        <div class="stat-mini-value">5</div>
+        <div class="stat-mini-label">Geübt</div>
+      </div>
+      <div class="stat-mini">
+        <div class="stat-mini-value">4.1</div>
+        <div class="stat-mini-label">Ø Level</div>
+      </div>
+    </div>
+
+    <!-- SESSION LIMIT -->
+    <div class="session-bar-wrap">
+      <div class="session-bar-label">Heute:</div>
+      <div class="session-dots">
+        <div class="session-dot done">✓</div>
+        <div class="session-dot current"></div>
+        <div class="session-dot"></div>
+      </div>
+      <div class="session-remaining">Noch 2 Sessions</div>
+    </div>
+
+    <!-- VORSCHLÄGE -->
+    <div class="section-title">Heute für dich</div>
+
+    <div class="game-cards">
+
+      <div class="game-card highlight" onclick="openModal('Farbflip', 'Kognitive Flexibilität', '🎨', '#fdf0e6', 3, 60)">
+        <div class="game-emoji" style="background:#fdf0e6;">🎨</div>
+        <div class="game-info">
+          <div class="game-name">Farbflip</div>
+          <div class="game-ef">Kognitive Flexibilität</div>
+          <div class="game-level-row">
+            <div class="game-level-bar-bg"><div class="game-level-bar-fill" style="width:45%"></div></div>
+            <div class="game-level-label">Level 3 von 6</div>
+          </div>
+        </div>
+        <div class="game-arrow">›</div>
+      </div>
+
+      <div class="game-card" onclick="openModal('Tier-Parade', 'Arbeitsgedächtnis', '🐘', '#e6eef8', 4, 70)">
+        <div class="game-emoji" style="background:#e6eef8;">🐘</div>
+        <div class="game-info">
+          <div class="game-name">Tier-Parade</div>
+          <div class="game-ef">Arbeitsgedächtnis</div>
+          <div class="game-level-row">
+            <div class="game-level-bar-bg"><div class="game-level-bar-fill" style="width:60%"></div></div>
+            <div class="game-level-label">Level 4 von 6</div>
+          </div>
+        </div>
+        <div class="game-arrow">›</div>
+      </div>
+
+      <div class="game-card" onclick="openModal('Halt die Tatze!', 'Inhibition', '🐾', '#e8f4ee', 4, 70)">
+        <div class="game-emoji" style="background:#e8f4ee;">🐾</div>
+        <div class="game-info">
+          <div class="game-name">Halt die Tatze!</div>
+          <div class="game-ef">Inhibition</div>
+          <div class="game-level-row">
+            <div class="game-level-bar-bg"><div class="game-level-bar-fill" style="width:65%"></div></div>
+            <div class="game-level-label">Level 4 von 6</div>
+          </div>
+        </div>
+        <div class="game-arrow">›</div>
+      </div>
+
+    </div>
+
+    <!-- ÜBEN -->
+    <div class="ueben-section" onclick="alert('Hier öffnet sich die Spielübersicht im Üben-Modus')">
+      <div class="ueben-left">
+        <div class="ueben-title">Lieber üben?</div>
+        <div class="ueben-desc">Alle Spiele, freie Level-Wahl, kein Druck.</div>
+      </div>
+      <div class="ueben-arrow">›</div>
+    </div>
+
+    <div class="footer-space"></div>
+  </div>
+</div>
+
+<!-- ===================== REFLEXION SCREEN ===================== -->
+<div class="screen" id="reflexScreen">
+  <div class="topbar">
+    <div class="topbar-logo">FEX</div>
+  </div>
+  <div class="home-content">
+
+    <div class="result-block">
+      <div class="result-emoji" id="resultEmoji">🎨</div>
+      <div class="result-title" id="resultTitle">Farbflip abgeschlossen</div>
+      <div class="result-stats">
+        <div class="result-stat">
+          <div class="result-stat-value" id="resultLevel">4</div>
+          <div class="result-stat-label">Level erreicht</div>
+        </div>
+        <div class="result-stat">
+          <div class="result-stat-value" id="resultScore">18</div>
+          <div class="result-stat-label">Richtig</div>
+        </div>
+        <div class="result-stat">
+          <div class="result-stat-value">🔥 8</div>
+          <div class="result-stat-label">Tage Streak</div>
+        </div>
+      </div>
+      <div class="result-message" id="resultMessage">Super! Du hast Level 4 erreicht – das ist ein neuer Bestwert.</div>
+    </div>
+
+    <div class="reflex-card-full" id="reflexForm">
+      <div class="reflex-title-full">💬 Kurze Reflexion</div>
+      <div class="reflex-question-full" id="reflexQuestion">„Wann fällt dir das schnelle Umschalten im Schulalltag auch schwer?"</div>
+      <textarea class="reflex-textarea" id="reflexText" placeholder="Schreib 1–2 Sätze – deine Lehrperson liest das..."></textarea>
+      <div class="reflex-actions">
+        <button class="reflex-skip" onclick="finishReflex(false)">Überspringen</button>
+        <button class="reflex-send-btn" onclick="finishReflex(true)">Senden →</button>
+      </div>
+    </div>
+
+    <div class="reflex-done" id="reflexDone">
+      <div class="reflex-done-icon">✓</div>
+      <div class="reflex-done-title">Danke!</div>
+      <div class="reflex-done-sub">Deine Lehrperson sieht deine Antwort.</div>
+      <button class="back-home-btn" onclick="backToHome()">Zurück zur Startseite</button>
+    </div>
+
+    <div class="footer-space"></div>
+  </div>
+</div>
+
+<!-- ===================== MODE MODAL ===================== -->
+<div class="modal-overlay" id="modeModal" onclick="closeModalOutside(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-game-title" id="modalTitle">Farbflip</div>
+    <div class="modal-game-ef" id="modalEF">Kognitive Flexibilität</div>
+    <div class="modal-mode-btns">
+      <button class="mode-btn primary" onclick="startGame('spielen')">
+        <div class="mode-btn-title">Spielen</div>
+        <div class="mode-btn-desc">Das System stellt dein Level ein und passt es live an. Dein Fortschritt wird gespeichert.</div>
+      </button>
+    </div>
+    <div class="modal-level-info" id="modalLevelInfo">
+      ✓ Dein Startlevel im Spielmodus: <strong>Level 3</strong> – basierend auf deinen letzten Sessions.
+    </div>
+    <button class="modal-cancel" onclick="closeModal()">Abbrechen</button>
+  </div>
+</div>
+
+<script>
+  // Mock-Daten für Demo
+  const users = {
+    'alina.b': { password: '1234', name: 'Alina', streak: 8, sessions: 12, ueben: 5, level: 4.1 },
+    'noah.f':  { password: '1234', name: 'Noah',  streak: 3, sessions: 7,  ueben: 2, level: 3.2 },
+    'demo':    { password: 'demo', name: 'Demo',   streak: 1, sessions: 1,  ueben: 0, level: 2.0 }
+  };
+
+  let currentUser = null;
+  let selectedGame = null;
+
+  // LOGIN
+  function doLogin() {
+    const username = document.getElementById('usernameInput').value.trim().toLowerCase();
+    const password = document.getElementById('passwordInput').value;
+    const user = users[username];
+
+    if (user && user.password === password) {
+      currentUser = user;
+      document.getElementById('loginError').classList.remove('show');
+      showHome();
+    } else {
+      document.getElementById('loginError').classList.add('show');
+      document.getElementById('passwordInput').value = '';
+    }
+  }
+
+  // Enter key support
+  document.getElementById('passwordInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+  document.getElementById('usernameInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('passwordInput').focus();
+  });
+
+  function showHome() {
+    document.getElementById('loginScreen').classList.remove('active');
+    document.getElementById('homeScreen').classList.add('active');
+
+    // Personalisieren
+    const hour = new Date().getHours();
+    let greeting = hour < 12 ? 'Guten Morgen' : hour < 17 ? 'Hallo' : 'Guten Abend';
+    document.getElementById('greetingText').textContent = `${greeting}, ${currentUser.name}! 👋`;
+    document.getElementById('streakCount').textContent = currentUser.streak;
+  }
+
+  function doLogout() {
+    currentUser = null;
+    document.getElementById('homeScreen').classList.remove('active');
+    document.getElementById('loginScreen').classList.add('active');
+    document.getElementById('usernameInput').value = '';
+    document.getElementById('passwordInput').value = '';
+  }
+
+  // MODAL
+  function openModal(name, ef, emoji, bg, level, levelPct) {
+    selectedGame = { name, ef, emoji, bg, level };
+    document.getElementById('modalTitle').textContent = name;
+    document.getElementById('modalEF').textContent = ef;
+    document.getElementById('modalLevelInfo').innerHTML =
+      `✓ Dein Startlevel im Spielmodus: <strong>Level ${level}</strong> – basierend auf deinen letzten Sessions.`;
+    document.getElementById('modeModal').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('modeModal').classList.remove('open');
+  }
+
+  function closeModalOutside(e) {
+    if (e.target === document.getElementById('modeModal')) closeModal();
+  }
+
+  const reflexQuestions = {
+    'Farbflip': 'Wann fällt dir das schnelle Umschalten im Schulalltag auch schwer?',
+    'Tier-Parade': 'Wie merkst du dir Dinge, die du nicht vergessen darfst – im Schulalltag?',
+    'Halt die Tatze!': 'Wann musst du dich im Schulalltag bremsen, obwohl du sofort reagieren möchtest?'
+  };
+
+  function startGame(mode) {
+    closeModal();
+    if (mode === 'spielen') {
+      setTimeout(() => showReflex(), 200);
+    } else {
+      alert('Übungsmodus startet – freie Level-Wahl, kein Tracking.');
+    }
+  }
+
+  function showReflex() {
+    document.getElementById('homeScreen').classList.remove('active');
+    document.getElementById('reflexScreen').classList.add('active');
+
+    const game = selectedGame;
+    document.getElementById('resultEmoji').textContent = game.emoji || '🎮';
+    document.getElementById('resultTitle').textContent = game.name + ' abgeschlossen';
+    document.getElementById('resultLevel').textContent = game.level || 4;
+    document.getElementById('resultScore').textContent = Math.floor(Math.random() * 10) + 14;
+    document.getElementById('resultMessage').textContent =
+      'Super! Du hast Level ' + (game.level || 4) + ' erreicht – weiter so!';
+
+    const q = reflexQuestions[game.name] || 'Was war heute besonders schwierig – und kennst du das aus dem Schulalltag?';
+    document.getElementById('reflexQuestion').textContent = '„' + q + '"';
+
+    document.getElementById('reflexText').value = '';
+    document.getElementById('reflexForm').style.display = 'flex';
+    document.getElementById('reflexDone').style.display = 'none';
+  }
+
+  function finishReflex(send) {
+    if (send) {
+      document.getElementById('reflexForm').style.display = 'none';
+      document.getElementById('reflexDone').style.display = 'flex';
+    } else {
+      backToHome();
+    }
+  }
+
+  function backToHome() {
+    document.getElementById('reflexScreen').classList.remove('active');
+    document.getElementById('homeScreen').classList.add('active');
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FEX-Übersicht</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            height: 100%;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: clamp(20px, 5vw, 40px) clamp(10px, 3vw, 30px);
+            padding-bottom: 40px;
+        }
+
+        h1 {
+            font-size: clamp(1.8rem, 5vw, 2.5rem);
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.3em;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+            text-align: center;
+            margin-bottom: 1.5em;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+        }
+
+        /* Slider Section */
+        .slider-section {
+            background: #fafafa;
+            border-radius: 12px;
+            padding: clamp(15px, 4vw, 25px);
+            margin-bottom: 1.5em;
+        }
+
+        .slider-group {
+            margin-bottom: 1.2em;
+        }
+
+        .slider-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .slider-label {
+            font-weight: 600;
+            color: #333;
+            font-size: clamp(0.9rem, 2.5vw, 1rem);
+        }
+
+        .slider-value {
+            font-size: 0.85rem;
+            color: #666;
+            min-width: 45px;
+            text-align: right;
+        }
+
+        .slider-value.active {
+            color: #333;
+            font-weight: 600;
+        }
+
+        /* Custom Range Slider */
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #e0e0e0;
+            outline: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #fff;
+            border: 3px solid #ccc;
+            cursor: pointer;
+            transition: border-color 0.2s, transform 0.1s;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #fff;
+            border: 3px solid #ccc;
+            cursor: pointer;
+            transition: border-color 0.2s, transform 0.1s;
+        }
+
+        input[type="range"].active::-webkit-slider-thumb {
+            border-color: #333;
+        }
+
+        input[type="range"].active::-moz-range-thumb {
+            border-color: #333;
+        }
+
+        input[type="range"]:active::-webkit-slider-thumb {
+            transform: scale(1.1);
+        }
+
+        /* Results Section */
+        .results-section {
+            min-height: 200px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3em 1em;
+            color: #999;
+        }
+
+        .empty-state .icon {
+            font-size: 3rem;
+            margin-bottom: 0.5em;
+            opacity: 0.5;
+        }
+
+        .empty-state p {
+            font-size: clamp(0.95rem, 2.5vw, 1.1rem);
+            line-height: 1.5;
+        }
+
+        /* Game Cards */
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: clamp(12px, 3vw, 20px);
+        }
+
+        .game-card {
+            background: #fff;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: clamp(12px, 3vw, 18px);
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.15s, border-color 0.2s, opacity 0.3s;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .game-card:hover {
+            transform: translateY(-2px);
+            border-color: #333;
+        }
+
+        .game-card:active {
+            transform: scale(0.98);
+        }
+
+        .game-card.low-match {
+            opacity: 0.4;
+            border-color: #eee;
+        }
+
+        .game-card.low-match:hover {
+            opacity: 0.7;
+            border-color: #ccc;
+        }
+
+        .game-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.3em;
+        }
+
+        .game-name {
+            font-weight: 600;
+            color: #333;
+            font-size: clamp(0.85rem, 2.5vw, 1rem);
+            margin-bottom: 0.4em;
+        }
+
+        .match-score {
+            font-size: 0.8rem;
+            color: #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .match-bar {
+            width: 50px;
+            height: 6px;
+            background: #eee;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .match-fill {
+            height: 100%;
+            background: #4CAF50;
+            border-radius: 3px;
+            transition: width 0.3s;
+        }
+
+        .match-fill.medium {
+            background: #ff9800;
+        }
+
+        .match-fill.low {
+            background: #ccc;
+        }
+
+        /* EF Tags on Cards */
+        .ef-tags {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .ef-tag {
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .ef-tag.highlight {
+            background: #333;
+            color: #fff;
+        }
+
+        /* Reset Button */
+        .reset-btn {
+            display: none;
+            margin-top: 1em;
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            border: 2px solid #999;
+            border-radius: 8px;
+            background: #fff;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .reset-btn:hover {
+            border-color: #333;
+            color: #333;
+        }
+
+        .reset-btn.visible {
+            display: inline-block;
+        }
+
+        .reset-container {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>FEX-Übersicht</h1>
+        <p class="subtitle">Finde Spiele nach kognitiven Schwerpunkten</p>
+
+        <div class="slider-section">
+            <div class="slider-group">
+                <div class="slider-header">
+                    <span class="slider-label">Arbeitsgedächtnis</span>
+                    <span class="slider-value" id="valueAG">–</span>
+                </div>
+                <input type="range" id="sliderAG" min="0" max="100" value="0" 
+                       oninput="updateSlider('AG')">
+            </div>
+
+            <div class="slider-group">
+                <div class="slider-header">
+                    <span class="slider-label">Inhibition</span>
+                    <span class="slider-value" id="valueInh">–</span>
+                </div>
+                <input type="range" id="sliderInh" min="0" max="100" value="0" 
+                       oninput="updateSlider('Inh')">
+            </div>
+
+            <div class="slider-group">
+                <div class="slider-header">
+                    <span class="slider-label">Kognitive Flexibilität</span>
+                    <span class="slider-value" id="valueFlex">–</span>
+                </div>
+                <input type="range" id="sliderFlex" min="0" max="100" value="0" 
+                       oninput="updateSlider('Flex')">
+            </div>
+        </div>
+
+        <div class="results-section" id="results">
+            <div class="empty-state" id="emptyState"></div>
+            <div class="games-grid" id="gamesGrid" style="display: none;"></div>
+        </div>
+
+        <div class="reset-container">
+            <button class="reset-btn" id="resetBtn" onclick="resetSliders()">Zurücksetzen</button>
+        </div>
+    </div>
+
+    <script>
+        // Spiele-Datenbank mit EF-Profilen (0-100)
+        const games = [
+            // === ARBEITSGEDÄCHTNIS-FOKUS ===
+            {
+                id: 'schon-gesehen',
+                name: 'Schon gesehen!',
+                icon: '👀',
+                file: 'schon-gesehen.html',
+                profile: { AG: 95, Inh: 20, Flex: 15 },
+                tags: ['AG']
+            },
+            {
+                id: 'tier-parade',
+                name: 'Tier-Parade',
+                icon: '🎪',
+                file: 'tier-parade.html',
+                profile: { AG: 90, Inh: 15, Flex: 20 },
+                tags: ['AG']
+            },
+            {
+                id: 'tier-rueckblick',
+                name: 'Tier-Rückblick',
+                icon: '🔙',
+                file: 'tier-rueckblick.html',
+                profile: { AG: 90, Inh: 15, Flex: 20 },
+                tags: ['AG']
+            },
+            {
+                id: 'alles-im-blick',
+                name: 'Alles im Blick',
+                icon: '🎯',
+                file: 'alles-im-blick.html',
+                profile: { AG: 85, Inh: 25, Flex: 50 },
+                tags: ['AG', 'Flex']
+            },
+            {
+                id: 'drei-tiere',
+                name: 'Drei Tiere',
+                icon: '🔢',
+                file: 'drei-tiere.html',
+                profile: { AG: 70, Inh: 30, Flex: 40 },
+                tags: ['AG']
+            },
+            // === INHIBITION-FOKUS ===
+            {
+                id: 'halt-die-tatze',
+                name: 'Halt die Tatze!',
+                icon: '✋',
+                file: 'halt-die-tatze.html',
+                profile: { AG: 20, Inh: 95, Flex: 15 },
+                tags: ['Inh']
+            },
+            {
+                id: 'schau-genau',
+                name: 'Schau genau!',
+                icon: '🎨',
+                file: 'schau-genau.html',
+                profile: { AG: 25, Inh: 90, Flex: 45 },
+                tags: ['Inh', 'Flex']
+            },
+            {
+                id: 'zaehl-mit',
+                name: 'Zähl mit!',
+                icon: '🔢',
+                file: 'zaehl-mit.html',
+                profile: { AG: 75, Inh: 80, Flex: 30 },
+                tags: ['Inh', 'AG']
+            },
+            {
+                id: 'kopf-an',
+                name: 'Kopf an!',
+                icon: '💡',
+                file: 'kopf-an.html',
+                profile: { AG: 80, Inh: 75, Flex: 30 },
+                tags: ['AG', 'Inh']
+            },
+            // === FLEXIBILITÄT-FOKUS ===
+            {
+                id: 'farbflip',
+                name: 'Farbflip',
+                icon: '🔄',
+                file: 'farbflip.html',
+                profile: { AG: 40, Inh: 20, Flex: 95 },
+                tags: ['Flex']
+            },
+            {
+                id: 'ab-in-die-box',
+                name: 'Ab in die Box!',
+                icon: '📦',
+                file: 'ab-in-die-box.html',
+                profile: { AG: 45, Inh: 25, Flex: 90 },
+                tags: ['Flex', 'AG']
+            }
+        ];
+
+        // State
+        const sliderState = {
+            AG: { value: 0, touched: false },
+            Inh: { value: 0, touched: false },
+            Flex: { value: 0, touched: false }
+        };
+
+        const tagLabels = {
+            AG: 'Gedächtnis',
+            Inh: 'Inhibition',
+            Flex: 'Flexibilität'
+        };
+
+        function updateSlider(type) {
+            const slider = document.getElementById('slider' + type);
+            const valueDisplay = document.getElementById('value' + type);
+            const value = parseInt(slider.value);
+
+            sliderState[type].value = value;
+            sliderState[type].touched = true;
+
+            // Update display
+            valueDisplay.textContent = value + '%';
+            valueDisplay.classList.add('active');
+            slider.classList.add('active');
+
+            updateResults();
+        }
+
+        function calculateMatch(game) {
+            // Nur aktivierte Dimensionen berücksichtigen
+            const activeDimensions = Object.keys(sliderState).filter(k => sliderState[k].touched);
+            
+            if (activeDimensions.length === 0) return 0;
+
+            let totalDiff = 0;
+            let count = 0;
+
+            activeDimensions.forEach(dim => {
+                const userValue = sliderState[dim].value;
+                const gameValue = game.profile[dim];
+                // Differenz berechnen (0 = perfekt, 100 = komplett daneben)
+                totalDiff += Math.abs(userValue - gameValue);
+                count++;
+            });
+
+            // Match-Score: 100 = perfekt, 0 = schlecht
+            const avgDiff = totalDiff / count;
+            return Math.max(0, 100 - avgDiff);
+        }
+
+        function updateResults() {
+            const anyTouched = Object.values(sliderState).some(s => s.touched);
+            const emptyState = document.getElementById('emptyState');
+            const gamesGrid = document.getElementById('gamesGrid');
+            const resetBtn = document.getElementById('resetBtn');
+
+            if (!anyTouched) {
+                emptyState.style.display = 'block';
+                gamesGrid.style.display = 'none';
+                resetBtn.classList.remove('visible');
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            gamesGrid.style.display = 'grid';
+            resetBtn.classList.add('visible');
+
+            // Match-Scores berechnen und sortieren
+            const gamesWithScores = games.map(game => ({
+                ...game,
+                matchScore: calculateMatch(game)
+            })).sort((a, b) => b.matchScore - a.matchScore);
+
+            // Grid rendern
+            gamesGrid.innerHTML = gamesWithScores.map(game => {
+                const isLowMatch = game.matchScore < 40;
+                const isMediumMatch = game.matchScore >= 40 && game.matchScore < 70;
+                
+                const fillClass = isLowMatch ? 'low' : (isMediumMatch ? 'medium' : '');
+                const cardClass = isLowMatch ? 'low-match' : '';
+
+                // Tags mit Highlighting für aktive Dimensionen
+                const tagsHtml = game.tags.map(tag => {
+                    const isHighlight = sliderState[tag].touched && sliderState[tag].value >= 50;
+                    return `<span class="ef-tag ${isHighlight ? 'highlight' : ''}">${tagLabels[tag]}</span>`;
+                }).join('');
+
+                return `
+                    <a href="${game.file}" class="game-card ${cardClass}">
+                        <div class="game-icon">${game.icon}</div>
+                        <div class="game-name">${game.name}</div>
+                        <div class="match-score">
+                            <div class="match-bar">
+                                <div class="match-fill ${fillClass}" style="width: ${game.matchScore}%"></div>
+                            </div>
+                            <span>${Math.round(game.matchScore)}%</span>
+                        </div>
+                        <div class="ef-tags">${tagsHtml}</div>
+                    </a>
+                `;
+            }).join('');
+        }
+
+        function resetSliders() {
+            ['AG', 'Inh', 'Flex'].forEach(type => {
+                sliderState[type] = { value: 0, touched: false };
+                document.getElementById('slider' + type).value = 0;
+                document.getElementById('slider' + type).classList.remove('active');
+                document.getElementById('value' + type).textContent = '–';
+                document.getElementById('value' + type).classList.remove('active');
+            });
+            updateResults();
+        }
+
+        // Initial state
+        updateResults();
+    </script>
+</body>
+</html>
