@@ -130,6 +130,25 @@
 
         .btn-login.loading .btn-text { display: none; }
         .btn-login.loading .spinner { display: block; }
+
+        .forgot-link {
+            margin-top: 1em;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        .forgot-link a {
+            color: #666;
+            text-decoration: none;
+        }
+        .forgot-link a:hover { color: #333; text-decoration: underline; }
+
+        .success-msg {
+            color: #4CAF50;
+            font-size: 0.9rem;
+            margin-top: 0.5em;
+            min-height: 1.3em;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -165,6 +184,8 @@
         </button>
 
         <p class="error-msg" id="errorMsg"></p>
+        <p class="forgot-link"><a href="#" onclick="handleForgotPassword()">Passwort vergessen?</a></p>
+        <p class="success-msg" id="successMsg"></p>
     </div>
 
     <!-- Supabase -->
@@ -186,6 +207,29 @@
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') handleLogin();
         });
+
+        async function handleForgotPassword() {
+            const email = document.getElementById('email').value.trim();
+            const errorMsg = document.getElementById('errorMsg');
+            const successMsg = document.getElementById('successMsg');
+            errorMsg.textContent = '';
+            successMsg.textContent = '';
+
+            if (!email) {
+                errorMsg.textContent = 'Bitte zuerst E-Mail eingeben.';
+                return;
+            }
+
+            const { error } = await db.auth.resetPasswordForEmail(email, {
+                redirectTo: window.location.origin + '/fex-einstellungen.html'
+            });
+
+            if (error) {
+                errorMsg.textContent = 'Fehler beim Senden der E-Mail.';
+            } else {
+                successMsg.textContent = 'E-Mail gesendet – bitte prüfe dein Postfach.';
+            }
+        }
 
         async function redirectByRole(user) {
             const { data: profile } = await db.from('profiles')
