@@ -661,7 +661,7 @@
 <body>
 
 <!-- ===================== HOME SCREEN ===================== -->
-<div class="screen" id="homeScreen" style="display:none">
+<div class="screen" id="homeScreen">
 
   <div class="topbar">
     <div class="topbar-logo">FEX</div>
@@ -941,7 +941,7 @@
 
   // ── HOME ANZEIGEN ─────────────────────────────────────────────
   function showHome() {
-    document.getElementById('homeScreen').style.display = 'flex';
+    document.getElementById('homeScreen').classList.add('active');
 
     const hour = new Date().getHours();
     const greeting = hour < 12 ? 'Guten Morgen' : hour < 17 ? 'Hallo' : 'Guten Abend';
