@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FEX – Passwort zurücksetzen</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html, body { height: 100%; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: clamp(20px, 5vw, 40px) clamp(10px, 3vw, 30px);
+        }
+        .box { text-align: center; max-width: 400px; width: 100%; }
+        h1 { font-size: clamp(2rem, 6vw, 3rem); font-weight: 600; color: #333; margin-bottom: 0.2em; }
+        .subtitle { color: #666; font-size: clamp(1rem, 3vw, 1.1rem); margin-bottom: 2em; line-height: 1.5; }
+        .form-group { margin-bottom: 1em; text-align: left; }
+        label { display: block; font-size: 0.85rem; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.4em; font-weight: 600; }
+        input {
+            width: 100%;
+            padding: clamp(12px, 3vw, 16px) clamp(14px, 3vw, 18px);
+            font-size: clamp(1rem, 3vw, 1.1rem);
+            font-family: inherit;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            background: #fff;
+            color: #333;
+            outline: none;
+            transition: border-color 0.2s;
+            user-select: text;
+        }
+        input:focus { border-color: #333; }
+        .btn {
+            width: 100%;
+            padding: clamp(15px, 4vw, 20px);
+            font-size: clamp(1rem, 3vw, 1.2rem);
+            font-family: inherit;
+            font-weight: 600;
+            border: 3px solid #333;
+            border-radius: 12px;
+            background: #333;
+            color: #fff;
+            cursor: pointer;
+            margin-top: 1.5em;
+            transition: transform 0.1s ease, opacity 0.2s;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn.secondary {
+            background: #fff;
+            color: #333;
+            margin-top: 0.75em;
+        }
+        .error-msg { color: #f44336; font-size: 0.9rem; margin-top: 1em; min-height: 1.3em; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <!-- Formular -->
+    <div class="box" id="formBox">
+        <h1>FEX</h1>
+        <p class="subtitle">Passwort zurücksetzen.<br>Wir schicken dir einen Link per E-Mail.</p>
+
+        <div class="form-group">
+            <label for="email">E-Mail</label>
+            <input type="email" id="email" placeholder="deine@schule.ch" autocomplete="email" inputmode="email">
+        </div>
+
+        <button class="btn" id="sendBtn" onclick="handleReset()">Link senden</button>
+        <button class="btn secondary" onclick="window.location.href='login.html'">Zurück zum Login</button>
+        <p class="error-msg" id="errorMsg"></p>
+    </div>
+
+    <!-- Bestätigung -->
+    <div class="box" id="doneBox" style="display:none">
+        <h1>FEX</h1>
+        <p class="subtitle">E-Mail gesendet.<br>Prüfe dein Postfach und klicke auf den Link.</p>
+        <button class="btn" onclick="window.location.href='login.html'">Zurück zum Login</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://iqlwfvuqwovihrirkbbb.supabase.co';
+        const SUPABASE_KEY = 'DEIN_ANON_KEY';
+        const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        document.getElementById('email').addEventListener('keydown', e => {
+            if (e.key === 'Enter') handleReset();
+        });
+
+        async function handleReset() {
+            const email = document.getElementById('email').value.trim();
+            const errorMsg = document.getElementById('errorMsg');
+            const btn = document.getElementById('sendBtn');
+            errorMsg.textContent = '';
+
+            if (!email) {
+                errorMsg.textContent = 'Bitte E-Mail-Adresse eingeben.';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '…';
+
+            const { error } = await db.auth.resetPasswordForEmail(email, {
+                redirectTo: window.location.origin + '/fex-passwort-neu.html'
+            });
+
+            if (error) {
+                errorMsg.textContent = 'Fehler beim Senden. Bitte erneut versuchen.';
+                btn.disabled = false;
+                btn.textContent = 'Link senden';
+                return;
+            }
+
+            document.getElementById('formBox').style.display = 'none';
+            document.getElementById('doneBox').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
