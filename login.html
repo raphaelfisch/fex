@@ -178,7 +178,7 @@
         // Bereits eingeloggt? → direkt weiter
         db.auth.getSession().then(({ data }) => {
             if (data.session) {
-                window.location.href = 'index.html';
+                window.location.href = 'fex-schueler.html';
             }
         });
 
@@ -214,7 +214,7 @@
             }
 
             // Erfolgreich → weiterleiten
-            window.location.href = 'index.html';
+            window.location.href = 'fex-schueler.html';
         }
     </script>
 </body>
