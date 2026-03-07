@@ -175,10 +175,10 @@
 
         const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Bereits eingeloggt? → direkt weiter
-        db.auth.getSession().then(({ data }) => {
+        // Bereits eingeloggt? → Rolle prüfen und weiterleiten
+        db.auth.getSession().then(async ({ data }) => {
             if (data.session) {
-                window.location.href = 'fex-schueler.html';
+                await redirectByRole(data.session.user);
             }
         });
 
@@ -186,6 +186,16 @@
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') handleLogin();
         });
+
+        async function redirectByRole(user) {
+            const { data: profile } = await db.from('profiles')
+                .select('role').eq('id', user.id).single();
+            if (profile?.role === 'teacher') {
+                window.location.href = 'fex-dashboard.html';
+            } else {
+                window.location.href = 'fex-schueler.html';
+            }
+        }
 
         async function handleLogin() {
             const email    = document.getElementById('email').value.trim();
@@ -213,8 +223,9 @@
                 return;
             }
 
-            // Erfolgreich → weiterleiten
-            window.location.href = 'fex-schueler.html';
+            // Erfolgreich → Rolle prüfen und weiterleiten
+            const { data: { user } } = await db.auth.getUser();
+            await redirectByRole(user);
         }
     </script>
 </body>
