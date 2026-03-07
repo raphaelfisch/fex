@@ -109,7 +109,7 @@
             btn.textContent = '…';
 
             const { error } = await db.auth.resetPasswordForEmail(email, {
-                redirectTo: window.location.origin + '/fex-passwort-neu.html'
+                redirectTo: 'https://raphaelfisch.github.io/fex/fex-passwort-neu.html'
             });
 
             if (error) {
