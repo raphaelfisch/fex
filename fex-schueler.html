@@ -675,8 +675,8 @@
     </div>
     <div class="login-form">
       <div class="input-group">
-        <div class="input-label">Benutzername</div>
-        <input class="input-field" type="text" id="usernameInput" placeholder="z.B. alina.b" autocomplete="username" autocapitalize="none">
+        <div class="input-label">E-Mail</div>
+        <input class="input-field" type="email" id="usernameInput" placeholder="deine@schule.ch" autocomplete="email" inputmode="email">
       </div>
       <div class="input-group">
         <div class="input-label">Passwort</div>
@@ -711,15 +711,15 @@
     <!-- STATS -->
     <div class="stats-row">
       <div class="stat-mini">
-        <div class="stat-mini-value">12</div>
+        <div class="stat-mini-value" id="statSessions">–</div>
         <div class="stat-mini-label">Sessions</div>
       </div>
       <div class="stat-mini">
-        <div class="stat-mini-value">5</div>
+        <div class="stat-mini-value" id="statUeben">–</div>
         <div class="stat-mini-label">Geübt</div>
       </div>
       <div class="stat-mini">
-        <div class="stat-mini-value">4.1</div>
+        <div class="stat-mini-value" id="statLevel">–</div>
         <div class="stat-mini-label">Ø Level</div>
       </div>
     </div>
@@ -782,7 +782,7 @@
     </div>
 
     <!-- ÜBEN -->
-    <div class="ueben-section" onclick="alert('Hier öffnet sich die Spielübersicht im Üben-Modus')">
+    <div class="ueben-section" onclick="goToUeben()">
       <div class="ueben-left">
         <div class="ueben-title">Lieber üben?</div>
         <div class="ueben-desc">Alle Spiele, freie Level-Wahl, kein Druck.</div>
@@ -861,115 +861,255 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  // Mock-Daten für Demo
-  const users = {
-    'alina.b': { password: '1234', name: 'Alina', streak: 8, sessions: 12, ueben: 5, level: 4.1 },
-    'noah.f':  { password: '1234', name: 'Noah',  streak: 3, sessions: 7,  ueben: 2, level: 3.2 },
-    'demo':    { password: 'demo', name: 'Demo',   streak: 1, sessions: 1,  ueben: 0, level: 2.0 }
-  };
+  // ── Konfiguration ─────────────────────────────────────────────
+  const SUPABASE_URL = 'https://iqlwfvuqwovihrirkbbb.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlxbHdmdnVxd292aWhyaXJrYmJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MTUyNTksImV4cCI6MjA4ODM5MTI1OX0.boggE0Hh9VkhYGSnvcgt9DqJy5qDlxKwhV-MFZpjGwo'; // ← hier deinen Key eintragen
+  const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+  // ── Spieldefinitionen ─────────────────────────────────────────
+  const GAMES = [
+    { id: 'drei-tiere',     name: 'Drei Tiere',       ef: 'Arbeitsgedächtnis',      emoji: '🐘', bg: '#e6eef8', file: 'drei-tiere.html',     reflex: 'Wie hast du dir die Reihenfolge der Tiere gemerkt?' },
+    { id: 'farbflip',       name: 'Farbflip',         ef: 'Kognitive Flexibilität', emoji: '🎨', bg: '#fdf0e6', file: 'farbflip.html',       reflex: 'Wann fällt dir das schnelle Umschalten im Schulalltag auch schwer?' },
+    { id: 'halt-tatze',     name: 'Halt die Tatze!',  ef: 'Inhibition',             emoji: '🐾', bg: '#e8f4ee', file: 'halt-tatze.html',     reflex: 'Wann musst du dich im Schulalltag bremsen?' },
+    { id: 'tier-parade',    name: 'Tier-Parade',      ef: 'Arbeitsgedächtnis',      emoji: '🦁', bg: '#e6eef8', file: 'tier-parade.html',    reflex: 'Wie merkst du dir Dinge, die du nicht vergessen darfst?' },
+    { id: 'alles-im-blick', name: 'Alles im Blick',   ef: 'Kognitive Flexibilität', emoji: '👁️', bg: '#fdf0e6', file: 'alles-im-blick.html', reflex: 'Wann musst du mehrere Dinge gleichzeitig im Blick behalten?' },
+    { id: 'ab-in-die-box',  name: 'Ab in die Box!',   ef: 'Kognitive Flexibilität', emoji: '📦', bg: '#fdf0e6', file: 'ab-in-die-box.html',  reflex: 'Nach welchen Regeln sortierst du im Alltag Dinge oder Aufgaben?' },
+    { id: 'schon-gesehen',  name: 'Schon gesehen!',   ef: 'Arbeitsgedächtnis',      emoji: '👀', bg: '#e6eef8', file: 'schon-gesehen.html',  reflex: 'Wann hast du das Gefühl, etwas schon mal gesehen zu haben?' },
+    { id: 'tier-rueckblick',name: 'Tier-Rückblick',   ef: 'Arbeitsgedächtnis',      emoji: '🔁', bg: '#e6eef8', file: 'tier-rueckblick.html',reflex: 'Wie gut kannst du dir Dinge merken, die kurz zuvor passiert sind?' },
+    { id: 'schau-genau',    name: 'Schau genau!',     ef: 'Inhibition',             emoji: '🔍', bg: '#e8f4ee', file: 'schau-genau.html',    reflex: 'Wann reagierst du automatisch falsch, obwohl du es besser weisst?' },
+  ];
+
+  // ── Zustand ───────────────────────────────────────────────────
   let currentUser = null;
+  let currentProfile = null;
   let selectedGame = null;
+  let sessionData = {};
 
-  // LOGIN
-  function doLogin() {
-    const username = document.getElementById('usernameInput').value.trim().toLowerCase();
+  // ── Beim Laden ────────────────────────────────────────────────
+  window.addEventListener('DOMContentLoaded', async () => {
+    const { data } = await db.auth.getSession();
+    if (data.session) {
+      currentUser = data.session.user;
+      await loadAndShowHome();
+    }
+    document.getElementById('passwordInput').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+    document.getElementById('usernameInput').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('passwordInput').focus(); });
+
+    // Nach Rückkehr vom Spiel: Reflexion zeigen
+    const lastGame = sessionStorage.getItem('fex_last_game');
+    if (lastGame && data.session) {
+      sessionStorage.removeItem('fex_last_game');
+      selectedGame = JSON.parse(lastGame);
+      setTimeout(() => showReflex(), 500);
+    }
+  });
+
+  // ── LOGIN ─────────────────────────────────────────────────────
+  async function doLogin() {
+    const email    = document.getElementById('usernameInput').value.trim();
     const password = document.getElementById('passwordInput').value;
-    const user = users[username];
+    const btn      = document.querySelector('.login-btn');
+    btn.textContent = '…';
+    btn.disabled = true;
 
-    if (user && user.password === password) {
-      currentUser = user;
-      document.getElementById('loginError').classList.remove('show');
-      showHome();
-    } else {
+    const { data, error } = await db.auth.signInWithPassword({ email, password });
+
+    if (error) {
       document.getElementById('loginError').classList.add('show');
       document.getElementById('passwordInput').value = '';
+      btn.textContent = 'Einloggen';
+      btn.disabled = false;
+      return;
     }
+    currentUser = data.user;
+    await loadAndShowHome();
   }
 
-  // Enter key support
-  document.getElementById('passwordInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') doLogin();
-  });
-  document.getElementById('usernameInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') document.getElementById('passwordInput').focus();
-  });
+  // ── DATEN LADEN ───────────────────────────────────────────────
+  async function loadAndShowHome() {
+    const { data: profile } = await db.from('profiles').select('*').eq('id', currentUser.id).single();
+    currentProfile = profile;
 
+    if (profile?.role === 'teacher') { window.location.href = 'dashboard.html'; return; }
+
+    const today = new Date().toISOString().split('T')[0];
+
+    const { count: todayCount } = await db.from('sessions')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', currentUser.id).eq('mode', 'spielen')
+      .gte('played_at', today + 'T00:00:00');
+
+    const { data: lastSessions } = await db.from('sessions')
+      .select('game_id, level_reached, played_at')
+      .eq('user_id', currentUser.id).eq('mode', 'spielen')
+      .order('played_at', { ascending: false });
+
+    const { data: allDays } = await db.from('sessions')
+      .select('played_at').eq('user_id', currentUser.id).eq('mode', 'spielen')
+      .order('played_at', { ascending: false });
+
+    const { count: totalSessions } = await db.from('sessions')
+      .select('*', { count: 'exact', head: true }).eq('user_id', currentUser.id).eq('mode', 'spielen');
+
+    const { count: totalUeben } = await db.from('sessions')
+      .select('*', { count: 'exact', head: true }).eq('user_id', currentUser.id).eq('mode', 'ueben');
+
+    const lastLevelMap = {};
+    (lastSessions || []).forEach(s => { if (!lastLevelMap[s.game_id]) lastLevelMap[s.game_id] = s.level_reached; });
+
+    const levels = Object.values(lastLevelMap);
+    const avgLevel = levels.length ? (levels.reduce((a,b) => a+b, 0) / levels.length).toFixed(1) : '–';
+
+    sessionData = {
+      todayCount: todayCount || 0,
+      lastLevelMap,
+      streak: calcStreak(allDays || []),
+      totalSessions: totalSessions || 0,
+      totalUeben: totalUeben || 0,
+      avgLevel
+    };
+
+    showHome();
+  }
+
+  function calcStreak(sessions) {
+    if (!sessions.length) return 0;
+    const days = [...new Set(sessions.map(s => s.played_at.split('T')[0]))].sort().reverse();
+    const today = new Date().toISOString().split('T')[0];
+    const d = new Date(); d.setDate(d.getDate() - 1);
+    const yest = d.toISOString().split('T')[0];
+    if (days[0] !== today && days[0] !== yest) return 0;
+    let streak = 1;
+    for (let i = 1; i < days.length; i++) {
+      const diff = (new Date(days[i-1]) - new Date(days[i])) / 86400000;
+      if (diff === 1) streak++; else break;
+    }
+    return streak;
+  }
+
+  // ── HOME ANZEIGEN ─────────────────────────────────────────────
   function showHome() {
     document.getElementById('loginScreen').classList.remove('active');
     document.getElementById('homeScreen').classList.add('active');
 
-    // Personalisieren
     const hour = new Date().getHours();
-    let greeting = hour < 12 ? 'Guten Morgen' : hour < 17 ? 'Hallo' : 'Guten Abend';
-    document.getElementById('greetingText').textContent = `${greeting}, ${currentUser.name}! 👋`;
-    document.getElementById('streakCount').textContent = currentUser.streak;
+    const greeting = hour < 12 ? 'Guten Morgen' : hour < 17 ? 'Hallo' : 'Guten Abend';
+    const name = currentProfile?.name || currentUser.email.split('@')[0];
+    document.getElementById('greetingText').textContent = `${greeting}, ${name}! 👋`;
+    document.getElementById('streakCount').textContent = sessionData.streak;
+
+    const { todayCount } = sessionData;
+    const remaining = Math.max(0, 3 - todayCount);
+    document.getElementById('greetingMessage').textContent =
+      remaining === 0 ? 'Du hast heute alle 3 Sessions gemacht – super!' :
+      todayCount === 0 ? 'Heute hast du noch keine Session gemacht. Bereit für eine Runde?' :
+      `${todayCount} von 3 Sessions heute. Weiter so!`;
+
+    document.getElementById('statSessions').textContent = sessionData.totalSessions;
+    document.getElementById('statUeben').textContent = sessionData.totalUeben;
+    document.getElementById('statLevel').textContent = sessionData.avgLevel;
+
+    renderSessionDots(todayCount);
+    renderGameCards();
   }
 
-  function doLogout() {
-    currentUser = null;
-    document.getElementById('homeScreen').classList.remove('active');
-    document.getElementById('loginScreen').classList.add('active');
-    document.getElementById('usernameInput').value = '';
-    document.getElementById('passwordInput').value = '';
+  function renderSessionDots(done) {
+    const container = document.querySelector('.session-dots');
+    const label = document.querySelector('.session-remaining');
+    container.innerHTML = '';
+    for (let i = 0; i < 3; i++) {
+      const dot = document.createElement('div');
+      dot.className = 'session-dot' + (i < done ? ' done' : i === done ? ' current' : '');
+      dot.textContent = i < done ? '✓' : '';
+      container.appendChild(dot);
+    }
+    const rem = Math.max(0, 3 - done);
+    label.textContent = rem === 0 ? 'Alle Sessions erledigt ✓' : `Noch ${rem} Session${rem !== 1 ? 's' : ''}`;
   }
 
-  // MODAL
-  function openModal(name, ef, emoji, bg, level, levelPct) {
-    selectedGame = { name, ef, emoji, bg, level };
-    document.getElementById('modalTitle').textContent = name;
-    document.getElementById('modalEF').textContent = ef;
+  function renderGameCards() {
+    const container = document.querySelector('.game-cards');
+    const { lastLevelMap, todayCount } = sessionData;
+
+    const scored = GAMES.map(g => ({
+      ...g,
+      lastLevel: lastLevelMap[g.id] || 1,
+      score: Math.random() * 5 + (6 - (lastLevelMap[g.id] || 1))
+    })).sort((a, b) => b.score - a.score).slice(0, 3);
+
+    const disabled = todayCount >= 3 ? ' style="opacity:0.4;pointer-events:none"' : '';
+    container.innerHTML = scored.map((g, i) => {
+      const levelPct = Math.round((g.lastLevel / 6) * 100);
+      return `
+        <div class="game-card${i === 0 ? ' highlight' : ''}" onclick="openModal('${g.id}')"${disabled}>
+          <div class="game-emoji" style="background:${g.bg}">${g.emoji}</div>
+          <div class="game-info">
+            <div class="game-name">${g.name}</div>
+            <div class="game-ef">${g.ef}</div>
+            <div class="game-level-row">
+              <div class="game-level-bar-bg"><div class="game-level-bar-fill" style="width:${levelPct}%"></div></div>
+              <div class="game-level-label">Level ${g.lastLevel} von 6</div>
+            </div>
+          </div>
+          <div class="game-arrow">›</div>
+        </div>`;
+    }).join('');
+  }
+
+  // ── MODAL ─────────────────────────────────────────────────────
+  function openModal(gameId) {
+    const game = GAMES.find(g => g.id === gameId);
+    if (!game) return;
+    selectedGame = { ...game, lastLevel: sessionData.lastLevelMap[gameId] || 1 };
+    document.getElementById('modalTitle').textContent = game.name;
+    document.getElementById('modalEF').textContent = game.ef;
     document.getElementById('modalLevelInfo').innerHTML =
-      `✓ Dein Startlevel im Spielmodus: <strong>Level ${level}</strong> – basierend auf deinen letzten Sessions.`;
+      `✓ Dein Startlevel im Spielmodus: <strong>Level ${selectedGame.lastLevel}</strong> – basierend auf deinen letzten Sessions.`;
     document.getElementById('modeModal').classList.add('open');
   }
 
-  function closeModal() {
-    document.getElementById('modeModal').classList.remove('open');
-  }
+  function closeModal() { document.getElementById('modeModal').classList.remove('open'); }
+  function closeModalOutside(e) { if (e.target === document.getElementById('modeModal')) closeModal(); }
 
-  function closeModalOutside(e) {
-    if (e.target === document.getElementById('modeModal')) closeModal();
-  }
-
-  const reflexQuestions = {
-    'Farbflip': 'Wann fällt dir das schnelle Umschalten im Schulalltag auch schwer?',
-    'Tier-Parade': 'Wie merkst du dir Dinge, die du nicht vergessen darfst – im Schulalltag?',
-    'Halt die Tatze!': 'Wann musst du dich im Schulalltag bremsen, obwohl du sofort reagieren möchtest?'
-  };
-
+  // ── SPIEL STARTEN ─────────────────────────────────────────────
   function startGame(mode) {
     closeModal();
-    if (mode === 'spielen') {
-      setTimeout(() => showReflex(), 200);
-    } else {
-      alert('Übungsmodus startet – freie Level-Wahl, kein Tracking.');
-    }
+    if (!selectedGame) return;
+    sessionStorage.setItem('fex_last_game', JSON.stringify(selectedGame));
+    window.location.href = selectedGame.file + '?mode=' + mode;
   }
 
+  // ── REFLEXION ─────────────────────────────────────────────────
   function showReflex() {
     document.getElementById('homeScreen').classList.remove('active');
     document.getElementById('reflexScreen').classList.add('active');
-
-    const game = selectedGame;
-    document.getElementById('resultEmoji').textContent = game.emoji || '🎮';
-    document.getElementById('resultTitle').textContent = game.name + ' abgeschlossen';
-    document.getElementById('resultLevel').textContent = game.level || 4;
-    document.getElementById('resultScore').textContent = Math.floor(Math.random() * 10) + 14;
-    document.getElementById('resultMessage').textContent =
-      'Super! Du hast Level ' + (game.level || 4) + ' erreicht – weiter so!';
-
-    const q = reflexQuestions[game.name] || 'Was war heute besonders schwierig – und kennst du das aus dem Schulalltag?';
-    document.getElementById('reflexQuestion').textContent = '„' + q + '"';
-
+    document.getElementById('resultEmoji').textContent = selectedGame.emoji || '🎮';
+    document.getElementById('resultTitle').textContent = selectedGame.name + ' abgeschlossen';
+    document.getElementById('resultLevel').textContent = selectedGame.lastLevel || 1;
+    document.getElementById('resultScore').textContent = '–';
+    document.getElementById('resultMessage').textContent = 'Gut gemacht – weiter so!';
+    document.getElementById('reflexQuestion').textContent = '„' + selectedGame.reflex + '"';
     document.getElementById('reflexText').value = '';
     document.getElementById('reflexForm').style.display = 'flex';
     document.getElementById('reflexDone').style.display = 'none';
   }
 
-  function finishReflex(send) {
+  async function finishReflex(send) {
     if (send) {
+      const answer = document.getElementById('reflexText').value.trim();
+      if (answer && currentUser) {
+        const { data: lastSession } = await db.from('sessions')
+          .select('id').eq('user_id', currentUser.id)
+          .order('played_at', { ascending: false }).limit(1).single();
+        if (lastSession) {
+          await db.from('reflections').insert({
+            session_id: lastSession.id, user_id: currentUser.id,
+            question: selectedGame.reflex, answer
+          });
+        }
+      }
       document.getElementById('reflexForm').style.display = 'none';
       document.getElementById('reflexDone').style.display = 'flex';
     } else {
@@ -980,7 +1120,20 @@
   function backToHome() {
     document.getElementById('reflexScreen').classList.remove('active');
     document.getElementById('homeScreen').classList.add('active');
+    loadAndShowHome();
   }
+
+  // ── LOGOUT ────────────────────────────────────────────────────
+  async function doLogout() {
+    await db.auth.signOut();
+    currentUser = null; currentProfile = null;
+    document.getElementById('homeScreen').classList.remove('active');
+    document.getElementById('loginScreen').classList.add('active');
+    document.getElementById('usernameInput').value = '';
+    document.getElementById('passwordInput').value = '';
+  }
+
+  function goToUeben() { window.location.href = 'index.html'; }
 </script>
 </body>
 </html>
