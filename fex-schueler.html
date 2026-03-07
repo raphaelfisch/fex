@@ -42,12 +42,6 @@
   /* =====================
      LOGIN SCREEN
   ===================== */
-  #loginScreen {
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    background: var(--bg);
-  }
 
   .login-box {
     background: var(--surface);
@@ -666,31 +660,8 @@
 </head>
 <body>
 
-<!-- ===================== LOGIN SCREEN ===================== -->
-<div class="screen active" id="loginScreen">
-  <div class="login-box">
-    <div class="login-header">
-      <div class="login-logo">FEX</div>
-      <div class="login-subtitle">Mein Kognitionstraining</div>
-    </div>
-    <div class="login-form">
-      <div class="input-group">
-        <div class="input-label">E-Mail</div>
-        <input class="input-field" type="email" id="usernameInput" placeholder="deine@schule.ch" autocomplete="email" inputmode="email">
-      </div>
-      <div class="input-group">
-        <div class="input-label">Passwort</div>
-        <input class="input-field" type="password" id="passwordInput" placeholder="••••••••" autocomplete="current-password">
-      </div>
-      <div class="login-error" id="loginError">Benutzername oder Passwort falsch.</div>
-      <button class="login-btn" onclick="doLogin()">Einloggen</button>
-    </div>
-    <div class="login-hint">Zugangsdaten erhältst du von deiner Lehrperson.</div>
-  </div>
-</div>
-
 <!-- ===================== HOME SCREEN ===================== -->
-<div class="screen" id="homeScreen">
+<div class="screen" id="homeScreen" style="display:none">
 
   <div class="topbar">
     <div class="topbar-logo">FEX</div>
@@ -890,42 +861,21 @@
   // ── Beim Laden ────────────────────────────────────────────────
   window.addEventListener('DOMContentLoaded', async () => {
     const { data } = await db.auth.getSession();
-    if (data.session) {
-      currentUser = data.session.user;
-      await loadAndShowHome();
+    if (!data.session) {
+      window.location.href = 'login.html';
+      return;
     }
-    document.getElementById('passwordInput').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-    document.getElementById('usernameInput').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('passwordInput').focus(); });
+    currentUser = data.session.user;
+    await loadAndShowHome();
 
     // Nach Rückkehr vom Spiel: Reflexion zeigen
     const lastGame = sessionStorage.getItem('fex_last_game');
-    if (lastGame && data.session) {
+    if (lastGame) {
       sessionStorage.removeItem('fex_last_game');
       selectedGame = JSON.parse(lastGame);
       setTimeout(() => showReflex(), 500);
     }
   });
-
-  // ── LOGIN ─────────────────────────────────────────────────────
-  async function doLogin() {
-    const email    = document.getElementById('usernameInput').value.trim();
-    const password = document.getElementById('passwordInput').value;
-    const btn      = document.querySelector('.login-btn');
-    btn.textContent = '…';
-    btn.disabled = true;
-
-    const { data, error } = await db.auth.signInWithPassword({ email, password });
-
-    if (error) {
-      document.getElementById('loginError').classList.add('show');
-      document.getElementById('passwordInput').value = '';
-      btn.textContent = 'Einloggen';
-      btn.disabled = false;
-      return;
-    }
-    currentUser = data.user;
-    await loadAndShowHome();
-  }
 
   // ── DATEN LADEN ───────────────────────────────────────────────
   async function loadAndShowHome() {
@@ -991,8 +941,7 @@
 
   // ── HOME ANZEIGEN ─────────────────────────────────────────────
   function showHome() {
-    document.getElementById('loginScreen').classList.remove('active');
-    document.getElementById('homeScreen').classList.add('active');
+    document.getElementById('homeScreen').style.display = 'flex';
 
     const hour = new Date().getHours();
     const greeting = hour < 12 ? 'Guten Morgen' : hour < 17 ? 'Hallo' : 'Guten Abend';
@@ -1126,11 +1075,7 @@
   // ── LOGOUT ────────────────────────────────────────────────────
   async function doLogout() {
     await db.auth.signOut();
-    currentUser = null; currentProfile = null;
-    document.getElementById('homeScreen').classList.remove('active');
-    document.getElementById('loginScreen').classList.add('active');
-    document.getElementById('usernameInput').value = '';
-    document.getElementById('passwordInput').value = '';
+    window.location.href = 'login.html';
   }
 
   function goToUeben() { window.location.href = 'fex-uebersicht.html'; }
