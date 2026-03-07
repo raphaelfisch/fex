@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FEX – Neues Passwort</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html, body { height: 100%; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: clamp(20px, 5vw, 40px) clamp(10px, 3vw, 30px);
+        }
+        .box {
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+        h1 {
+            font-size: clamp(2rem, 6vw, 3rem);
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.2em;
+        }
+        .subtitle {
+            color: #666;
+            font-size: clamp(1rem, 3vw, 1.1rem);
+            margin-bottom: 2em;
+            line-height: 1.5;
+        }
+        .form-group { margin-bottom: 1em; text-align: left; }
+        label {
+            display: block;
+            font-size: 0.85rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.4em;
+            font-weight: 600;
+        }
+        input {
+            width: 100%;
+            padding: clamp(12px, 3vw, 16px) clamp(14px, 3vw, 18px);
+            font-size: clamp(1rem, 3vw, 1.1rem);
+            font-family: inherit;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            background: #fff;
+            color: #333;
+            outline: none;
+            transition: border-color 0.2s;
+            user-select: text;
+        }
+        input:focus { border-color: #333; }
+        .btn {
+            width: 100%;
+            padding: clamp(15px, 4vw, 20px);
+            font-size: clamp(1rem, 3vw, 1.2rem);
+            font-family: inherit;
+            font-weight: 600;
+            border: 3px solid #333;
+            border-radius: 12px;
+            background: #333;
+            color: #fff;
+            cursor: pointer;
+            margin-top: 1.5em;
+            transition: transform 0.1s ease, opacity 0.2s;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .error-msg { color: #f44336; font-size: 0.9rem; margin-top: 1em; min-height: 1.3em; text-align: center; }
+        .success-msg { color: #4CAF50; font-size: 0.9rem; margin-top: 1em; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="box" id="formBox">
+        <h1>FEX</h1>
+        <p class="subtitle">Neues Passwort festlegen.</p>
+
+        <div class="form-group">
+            <label for="password">Neues Passwort</label>
+            <input type="password" id="password" placeholder="Mind. 6 Zeichen" autocomplete="new-password">
+        </div>
+        <div class="form-group">
+            <label for="password2">Passwort bestätigen</label>
+            <input type="password" id="password2" placeholder="••••••••" autocomplete="new-password">
+        </div>
+
+        <button class="btn" onclick="handleReset()">Passwort speichern</button>
+        <p class="error-msg" id="errorMsg"></p>
+    </div>
+
+    <div class="box" id="successBox" style="display:none">
+        <h1>FEX</h1>
+        <p class="subtitle">Passwort erfolgreich geändert.</p>
+        <button class="btn" onclick="window.location.href='login.html'">Zum Login</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://iqlwfvuqwovihrirkbbb.supabase.co';
+        const SUPABASE_KEY = 'DEIN_ANON_KEY';
+        const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function handleReset() {
+            const pw1 = document.getElementById('password').value;
+            const pw2 = document.getElementById('password2').value;
+            const errorMsg = document.getElementById('errorMsg');
+            errorMsg.textContent = '';
+
+            if (pw1.length < 6) {
+                errorMsg.textContent = 'Passwort muss mind. 6 Zeichen haben.';
+                return;
+            }
+            if (pw1 !== pw2) {
+                errorMsg.textContent = 'Passwörter stimmen nicht überein.';
+                return;
+            }
+
+            const { error } = await db.auth.updateUser({ password: pw1 });
+
+            if (error) {
+                errorMsg.textContent = 'Fehler: ' + error.message;
+                return;
+            }
+
+            document.getElementById('formBox').style.display = 'none';
+            document.getElementById('successBox').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
