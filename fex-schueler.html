@@ -866,6 +866,14 @@
       return;
     }
     currentUser = data.session.user;
+    // Prüfen ob User noch in DB existiert
+    const { data: profile, error: profileErr } = await db.from('profiles').select('id,role').eq('id', currentUser.id).single();
+    if (profileErr || !profile) {
+      await db.auth.signOut();
+      window.location.href = 'login.html';
+      return;
+    }
+    currentProfile = profile;
     await loadAndShowHome();
 
     // Nach Rückkehr vom Spiel: Reflexion zeigen
