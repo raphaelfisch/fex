@@ -343,7 +343,7 @@
         .result.wrong { color: #f44336; }
         .result.timeout { color: #ff9800; }
 
-        /* Übungsmodus Controls */
+        /* Ãbungsmodus Controls */
         .practice-controls {
             display: none;
             flex-direction: column;
@@ -507,7 +507,7 @@
         <div class="mode-buttons">
             <button class="mode-btn primary" onclick="startGame('play')">Spielen</button>
             <button class="mode-btn" onclick="startGame('practice')">Üben</button>
-            <button class="back-btn" id="backBtn" onclick="window.location.href='fex-schueler.html'">Zur ck</button>
+            <button class="back-btn" id="backBtn" onclick="window.location.href='fex-schueler.html'">Zurück</button>
         </div>
     </div>
 
@@ -516,10 +516,10 @@
         <h1>Drei Tiere</h1>
         <p class="instruction" id="instruction">Welches Tier kommt genau 3 mal vor?</p>
 
-        <!-- Übungsmodus Controls -->
+        <!-- Ãbungsmodus Controls -->
         <div class="practice-controls" id="practiceControls">
             <div class="practice-row">
-                <label>Level wählen:</label>
+                <label>Level wÃ¤hlen:</label>
                 <div class="level-select">
                     <button class="level-btn active" data-level="1" onclick="setPracticeLevel(1)">1</button>
                     <button class="level-btn" data-level="2" onclick="setPracticeLevel(2)">2</button>
@@ -588,7 +588,7 @@ const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
         };
         
         const animals = Object.keys(animalData);
-        const colors = ['blau', 'gelb', 'grau', 'grün', 'orange', 'pink'];
+        const colors = ['blau', 'gelb', 'grau', 'grÃ¼n', 'orange', 'pink'];
 
         const levelConfigs = {
             1: { type: 'grid', cols: 3, rows: 3, total: 9, transforms: ['none'], timeLimit: 12000 },
@@ -688,7 +688,7 @@ const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
             
             // Instruktion je nach Modus
             if (gameMode === 'practice') {
-                document.getElementById('instruction').textContent = 'Wähle ein Level und klicke Start';
+                document.getElementById('instruction').textContent = 'WÃ¤hle ein Level und klicke Start';
             } else {
                 document.getElementById('instruction').textContent = 'Welches Tier kommt genau 3 mal vor?';
             }
@@ -698,7 +698,7 @@ const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
             startBtn.textContent = currentRound === 1 ? 'Start' : 'Weiter';
             document.getElementById('startOverlay').classList.add('active');
             
-            // Timer zurücksetzen
+            // Timer zurÃ¼cksetzen
             const timerFill = document.getElementById('timerFill');
             timerFill.style.width = '100%';
             timerFill.className = 'timer-fill';
@@ -711,7 +711,7 @@ const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
             generateRound();
         }
 
-        // ===== ÜBUNGSMODUS CONTROLS =====
+        // ===== ÃBUNGSMODUS CONTROLS =====
         function setPracticeLevel(level) {
             practiceLevel = level;
             currentLevel = level;
@@ -746,7 +746,7 @@ const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
             if (timerInterval) clearInterval(timerInterval);
 
-            // Kein Timer im Übungsmodus
+            // Kein Timer im Ãbungsmodus
             if (gameMode === 'practice') {
                 return;
             }
@@ -782,14 +782,14 @@ const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
             revealSolution();
             
             const result = document.getElementById('result');
-            result.textContent = '⏱ Zeit abgelaufen! ' + getArticle(targetAnimal) + ' ' + targetAnimal + ' war gesucht.';
+            result.textContent = 'â± Zeit abgelaufen! ' + getArticle(targetAnimal) + ' ' + targetAnimal + ' war gesucht.';
             result.className = 'result timeout';
 
             consecutiveFast = 0;
             consecutiveSlow++;
             checkLevelAdapt('slow');
             
-            // Runde hochzählen und Overlay zeigen
+            // Runde hochzÃ¤hlen und Overlay zeigen
             currentRound++;
             if (gameMode === 'play' && currentRound > MAX_ROUNDS) {
                 setTimeout(() => endSession(), 1500);
@@ -960,7 +960,7 @@ const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
                     correctCount++;
                     document.getElementById('correctDisplay').textContent = correctCount;
                 }
-                result.textContent = '✓ Richtig! ' + getArticle(targetAnimal) + ' ' + targetAnimal + ' kommt 3 mal vor.';
+                result.textContent = 'â Richtig! ' + getArticle(targetAnimal) + ' ' + targetAnimal + ' kommt 3 mal vor.';
                 result.className = 'result correct';
 
                 if (gameMode === 'play') {
@@ -978,7 +978,7 @@ const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
                     }
                 }
             } else {
-                result.textContent = '✗ Leider falsch. ' + getArticle(targetAnimal) + ' ' + targetAnimal + ' war gesucht.';
+                result.textContent = 'â Leider falsch. ' + getArticle(targetAnimal) + ' ' + targetAnimal + ' war gesucht.';
                 result.className = 'result wrong';
 
                 if (gameMode === 'play') {
@@ -988,7 +988,7 @@ const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
                 }
             }
             
-            // Nach Klick: Runde hochzählen und Overlay zeigen
+            // Nach Klick: Runde hochzÃ¤hlen und Overlay zeigen
             currentRound++;
             if (gameMode === 'play' && currentRound > MAX_ROUNDS) {
                 setTimeout(() => endSession(), 1500);
@@ -1017,11 +1017,11 @@ const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
             if (type === 'fast' && consecutiveFast >= ADAPT_THRESHOLD && currentLevel < 6) {
                 currentLevel++;
                 consecutiveFast = 0;
-                showLevelChange('⬆️ Level erhöht!');
+                showLevelChange('â¬ï¸ Level erhÃ¶ht!');
             } else if (type === 'slow' && consecutiveSlow >= ADAPT_THRESHOLD && currentLevel > 1) {
                 currentLevel--;
                 consecutiveSlow = 0;
-                showLevelChange('⬇️ Level angepasst');
+                showLevelChange('â¬ï¸ Level angepasst');
             }
         }
 
@@ -1058,6 +1058,7 @@ const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
         function confirmAbbruch() {
             closeAbbruch();
             disableAbbruchSchutz();
+            sessionStorage.removeItem('fex_last_game');
             backToStart();
         }
 
