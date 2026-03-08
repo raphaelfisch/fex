@@ -285,6 +285,9 @@ window.addEventListener('DOMContentLoaded',async()=>{
   const{data}=await db.auth.getSession();
   if(!data.session){window.location.href='login.html';return;}
   currentUser=data.session.user;
+  // Prüfen ob User noch in DB existiert und Lehrer ist
+  const{data:prof,error:profErr}=await db.from('profiles').select('id,role').eq('id',currentUser.id).single();
+  if(profErr||!prof||prof.role!=='teacher'){await db.auth.signOut();window.location.href='login.html';return;}
   document.getElementById('dateLabel').textContent=new Date().toLocaleDateString('de-CH',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   await loadDashboard();
 });
