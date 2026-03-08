@@ -638,7 +638,6 @@
   .reflex-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
   .reflex-skip { background: none; border: none; font-size: 0.82rem; color: var(--text-ter); cursor: pointer; font-family: "DM Sans", sans-serif; padding: 4px 0; }
   .reflex-skip:hover { color: var(--text-sec); }
-  .reflex-send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
   .reflex-send-btn { padding: 10px 22px; background: var(--blue); color: #fff; border: none; border-radius: 10px; font-size: 0.85rem; font-weight: 600; cursor: pointer; font-family: "DM Sans", sans-serif; }
   .reflex-send-btn:active { opacity: 0.85; }
 
@@ -786,8 +785,8 @@
           <div class="result-stat-label">Richtig</div>
         </div>
         <div class="result-stat">
-          <div class="result-stat-value" id="resultTime">–</div>
-          <div class="result-stat-label">Zeit</div>
+          <div class="result-stat-value">🔥 8</div>
+          <div class="result-stat-label">Tage Streak</div>
         </div>
       </div>
       <div class="result-message" id="resultMessage">Super! Du hast Level 4 erreicht – das ist ein neuer Bestwert.</div>
@@ -796,9 +795,10 @@
     <div class="reflex-card-full" id="reflexForm">
       <div class="reflex-title-full">💬 Kurze Reflexion</div>
       <div class="reflex-question-full" id="reflexQuestion">„Wann fällt dir das schnelle Umschalten im Schulalltag auch schwer?"</div>
-      <textarea class="reflex-textarea" id="reflexText" placeholder="Schreib 1–2 Sätze – deine Lehrperson liest das..." oninput="document.getElementById('reflexSendBtn').disabled=this.value.trim().length===0"></textarea>
+      <textarea class="reflex-textarea" id="reflexText" placeholder="Schreib 1–2 Sätze – deine Lehrperson liest das..."></textarea>
       <div class="reflex-actions">
-        <button class="reflex-send-btn" id="reflexSendBtn" onclick="submitReflex()" disabled>Senden →</button>
+        <button class="reflex-skip" onclick="finishReflex(false)">Überspringen</button>
+        <button class="reflex-send-btn" onclick="finishReflex(true)">Senden →</button>
       </div>
     </div>
 
@@ -945,8 +945,9 @@
 
     const hour = new Date().getHours();
     const greeting = hour < 12 ? 'Guten Morgen' : hour < 17 ? 'Hallo' : 'Guten Abend';
-    const name = currentProfile?.name || currentUser.email.split('@')[0];
-    document.getElementById('greetingText').textContent = `${greeting}, ${name}! 👋`;
+    const fullName = currentProfile?.name || currentUser.email.split('@')[0];
+    const firstName = fullName.split(' ')[0];
+    document.getElementById('greetingText').textContent = `${greeting}, ${firstName}! 👋`;
     document.getElementById('streakCount').textContent = sessionData.streak;
 
     const { todayCount } = sessionData;
@@ -1026,41 +1027,51 @@
   function startGame(mode) {
     closeModal();
     if (!selectedGame) return;
-    sessionStorage.setItem('fex_last_game', JSON.stringify(selectedGame));
     window.location.href = selectedGame.file + '?mode=' + mode;
   }
 
   // ── REFLEXION ─────────────────────────────────────────────────
+
+  // ===== REFLEXIONS-ABBRUCHSCHUTZ =====
+  function disableReflexSchutz() {
+    window.removeEventListener('popstate', handleReflexPopstate);
+    window.removeEventListener('beforeunload', handleReflexBeforeUnload);
+  }
+  function handleReflexPopstate() {
+    history.pushState(null, '', window.location.href);
+    showReflexWarning();
+  }
+  function handleReflexBeforeUnload(e) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+  function showReflexWarning() {
+    document.getElementById('reflexWarningOverlay').style.display = 'flex';
+  }
+  function closeReflexWarning() {
+    document.getElementById('reflexWarningOverlay').style.display = 'none';
+  }
+
   function showReflex() {
     document.getElementById('homeScreen').classList.remove('active');
     document.getElementById('reflexScreen').classList.add('active');
+    // Abbruchschutz aktivieren
+    history.pushState(null, '', window.location.href);
+    window.addEventListener('popstate', handleReflexPopstate);
+    window.addEventListener('beforeunload', handleReflexBeforeUnload);
     document.getElementById('resultEmoji').textContent = selectedGame.emoji || '🎮';
     document.getElementById('resultTitle').textContent = selectedGame.name + ' abgeschlossen';
-    document.getElementById('resultLevel').textContent = selectedGame.lastLevel || '–';
-    document.getElementById('resultScore').textContent = selectedGame.correctCount !== undefined ? selectedGame.correctCount + '/10' : '–';
-    const dur = selectedGame.durationSeconds;
-    if (dur) {
-      const mins = Math.floor(dur / 60);
-      const secs = dur % 60;
-      document.getElementById('resultTime').textContent = mins > 0 ? mins + '\'' + String(secs).padStart(2,'0') + '"' : secs + ' Sek.';
-    } else {
-      document.getElementById('resultTime').textContent = '–';
-    }
+    document.getElementById('resultLevel').textContent = selectedGame.lastLevel || 1;
+    document.getElementById('resultScore').textContent = '–';
     document.getElementById('resultMessage').textContent = 'Gut gemacht – weiter so!';
     document.getElementById('reflexQuestion').textContent = '„' + selectedGame.reflex + '"';
     document.getElementById('reflexText').value = '';
-    document.getElementById('reflexSendBtn').disabled = true;
     document.getElementById('reflexForm').style.display = 'flex';
     document.getElementById('reflexDone').style.display = 'none';
   }
 
-  function submitReflex() {
-    const answer = document.getElementById('reflexText').value.trim();
-    if (!answer) return;
-    finishReflex(true);
-  }
-
   async function finishReflex(send) {
+    disableReflexSchutz();
     if (send) {
       const answer = document.getElementById('reflexText').value.trim();
       if (answer && currentUser) {
@@ -1095,5 +1106,15 @@
 
   function goToUeben() { window.location.href = 'fex-uebersicht.html'; }
 </script>
+
+  <!-- REFLEXIONS-ABBRUCH-WARNUNG -->
+  <div id="reflexWarningOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:#fff;border-radius:16px;padding:28px 24px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.2);text-align:center;">
+      <div style="font-size:2rem;margin-bottom:12px;">✋</div>
+      <div style="font-size:1rem;font-weight:600;color:#333;margin-bottom:10px;">Reflexion nicht abgeschlossen</div>
+      <div style="font-size:0.88rem;color:#666;line-height:1.6;margin-bottom:22px;">Bitte schreib zuerst deine Antwort – das dauert nur einen Moment.</div>
+      <button onclick="closeReflexWarning()" style="width:100%;padding:12px;border:none;border-radius:10px;background:#333;color:#fff;font-size:.9rem;font-weight:600;cursor:pointer;font-family:inherit;">Zurück zur Reflexion</button>
+    </div>
+  </div>
 </body>
 </html>
