@@ -208,8 +208,11 @@
         });
 
         async function redirectByRole(user) {
-            const { data: profile } = await db.from('profiles')
+            const { data: profile, error } = await db.from('profiles')
                 .select('role').eq('id', user.id).single();
+            console.log('User ID:', user.id);
+            console.log('Profile:', profile);
+            console.log('Error:', error);
             if (profile?.role === 'teacher') {
                 window.location.href = 'fex-dashboard.html';
             } else {
