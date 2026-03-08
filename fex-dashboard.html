@@ -533,8 +533,7 @@ async function submitNewStudent(){
   const{data:authData,error:authError}=await tmp.auth.signUp({email,password,options:{data:{name,role:'student'}}});
   if(authError){errorEl.textContent='Fehler: '+authError.message;btn.disabled=false;btn.textContent='Hinzufügen';return;}
   if(!authData.user){errorEl.textContent='Account konnte nicht erstellt werden.';btn.disabled=false;btn.textContent='Hinzufügen';return;}
-  if(authData.user.identities&&authData.user.identities.length===0){errorEl.textContent='Diese E-Mail-Adresse ist bereits registriert.';btn.disabled=false;btn.textContent='Hinzufügen';return;}
-  await new Promise(r=>setTimeout(r,600));
+  await new Promise(r=>setTimeout(r,800));
   const{error:pErr}=await db.from('profiles').insert({id:authData.user.id,name,role:'student',class_id:currentClassId});
   if(pErr){errorEl.textContent='Profil-Fehler: '+pErr.message;btn.disabled=false;btn.textContent='Hinzufügen';return;}
   closeStudentModal();await loadClass(currentClassId);
