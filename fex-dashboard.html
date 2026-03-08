@@ -297,6 +297,8 @@ async function loadDashboard(){
   renderClassPills();
   if(currentClasses.length>0){currentClassId=currentClasses[0].id;await loadClass(currentClassId);}
   else showNoClassState();
+  const startView=window.location.hash.replace('#','');
+  if(['klasse','fortschritt','reflexionen','schueler'].includes(startView)) showView(startView);
 }
 
 function renderClassPills(){
@@ -451,6 +453,7 @@ async function openPanel(userId,name){
 }
 
 function showView(view){
+  window.location.hash = view;
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('view-'+view)?.classList.add('active');
@@ -514,7 +517,7 @@ async function deleteClass(classId){
 
 function showNewStudentModal(){
   if(!currentClassId){alertPopup('Bitte zuerst eine Klasse erstellen.','Hinweis');return;}
-  ['studentName','studentEmail','studentPassword'].forEach(id=>document.getElementById(id).value='');
+  ['studentFirstName','studentLastName','studentEmail','studentPassword'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('studentError').textContent='';
   const btn=document.getElementById('studentSubmitBtn');btn.disabled=false;btn.textContent='Hinzufügen';
   document.getElementById('studentModal').style.display='flex';
