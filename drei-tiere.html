@@ -478,22 +478,21 @@
         .hidden { display: none !important; }
 
         .back-btn {
-            position: fixed;
-            top: 16px;
-            left: 16px;
-            padding: 8px 16px;
-            font-size: 0.85rem;
+            width: 100%;
+            max-width: 280px;
+            padding: clamp(10px, 2.5vw, 14px) clamp(20px, 5vw, 40px);
+            font-size: clamp(0.85rem, 2.5vw, 1rem);
             font-family: inherit;
-            font-weight: 600;
-            border: 2px solid #999;
-            border-radius: 8px;
+            font-weight: 500;
+            border: 2px solid #ccc;
+            border-radius: 12px;
             background: #fff;
-            color: #666;
+            color: #999;
             cursor: pointer;
-            z-index: 200;
-            transition: border-color 0.2s, color 0.2s;
+            transition: border-color 0.15s, color 0.15s;
+            margin-top: 4px;
         }
-        .back-btn:hover { border-color: #333; color: #333; }
+        .back-btn:hover { border-color: #666; color: #555; }
         .back-btn.hidden { display: none; }
     </style>
 </head>
@@ -508,6 +507,7 @@
         <div class="mode-buttons">
             <button class="mode-btn primary" onclick="startGame('play')">Spielen</button>
             <button class="mode-btn" onclick="startGame('practice')">Üben</button>
+            <button class="back-btn" id="backBtn" onclick="window.location.href='fex-schueler.html'">Zurück</button>
         </div>
     </div>
 
@@ -1097,6 +1097,5 @@ const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
         }
     
     </script>
-    <button class="back-btn" id="backBtn" onclick="window.location.href='fex-schueler.html'">&#8592; Zurück</button>
 </body>
 </html>
