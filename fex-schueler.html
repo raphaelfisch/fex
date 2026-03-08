@@ -881,9 +881,12 @@
   async function loadAndShowHome() {
     const { data: profile, error: profileError } = await db.from('profiles').select('*').eq('id', currentUser.id).single();
     currentProfile = profile;
-    alert('ID: ' + currentUser.id + '\nProfile: ' + JSON.stringify(profile) + '\nError: ' + JSON.stringify(profileError));
-
-    if (profile?.role === 'teacher') { window.location.href = 'fex-dashboard.html'; return; }
+    document.body.innerHTML = '<div style="padding:20px;font-family:monospace;font-size:12px;word-break:break-all;background:#fff">' +
+      '<b>User ID:</b> ' + currentUser.id + '<br><br>' +
+      '<b>Profile:</b> ' + JSON.stringify(profile) + '<br><br>' +
+      '<b>Error:</b> ' + JSON.stringify(profileError) +
+      '</div>';
+    return;
 
     const today = new Date().toISOString().split('T')[0];
 
