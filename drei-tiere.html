@@ -555,7 +555,7 @@
         
         <div class="result" id="result"></div>
 
-        <div class="back-controls">
+        <div class="back-controls" id="backControls">
             <button class="btn secondary" onclick="backToStart()">Zurück</button>
         </div>
     </div>
@@ -660,11 +660,13 @@ const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
                 document.getElementById('practiceControls').classList.remove('active');
                 document.getElementById('scoreBoard').classList.remove('hidden');
                 document.getElementById('timerBar').classList.remove('hidden');
+                document.getElementById('backControls').classList.add('hidden');
             } else {
                 currentLevel = practiceLevel;
                 document.getElementById('practiceControls').classList.add('active');
                 document.getElementById('scoreBoard').classList.add('hidden');
                 document.getElementById('timerBar').classList.add('hidden');
+                document.getElementById('backControls').classList.remove('hidden');
             }
 
             updateDisplay();
@@ -677,6 +679,7 @@ const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
             document.getElementById('gameScreen').classList.remove('active');
             document.getElementById('startScreen').classList.remove('hidden');
             document.getElementById('backBtn').classList.remove('hidden');
+            document.getElementById('backControls').classList.remove('hidden');
         }
 
         function showStartState() {
