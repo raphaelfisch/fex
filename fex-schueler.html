@@ -879,8 +879,9 @@
 
   // ── DATEN LADEN ───────────────────────────────────────────────
   async function loadAndShowHome() {
-    const { data: profile } = await db.from('profiles').select('*').eq('id', currentUser.id).single();
+    const { data: profile, error: profileError } = await db.from('profiles').select('*').eq('id', currentUser.id).single();
     currentProfile = profile;
+    alert('ID: ' + currentUser.id + '\nProfile: ' + JSON.stringify(profile) + '\nError: ' + JSON.stringify(profileError));
 
     if (profile?.role === 'teacher') { window.location.href = 'fex-dashboard.html'; return; }
 
