@@ -882,7 +882,7 @@
     const { data: profile } = await db.from('profiles').select('*').eq('id', currentUser.id).single();
     currentProfile = profile;
 
-    if (profile?.role === 'teacher') { window.location.href = 'dashboard.html'; return; }
+    if (profile?.role === 'teacher') { window.location.href = 'fex-dashboard.html'; return; }
 
     const today = new Date().toISOString().split('T')[0];
 
