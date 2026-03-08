@@ -507,7 +507,6 @@
         <div class="mode-buttons">
             <button class="mode-btn primary" onclick="startGame('play')">Spielen</button>
             <button class="mode-btn" onclick="startGame('practice')">Üben</button>
-            <button class="back-btn" id="backBtn" onclick="window.location.href='fex-schueler.html'">Zurück</button>
         </div>
     </div>
 
@@ -612,8 +611,6 @@ const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
         let startTime = 0;
         let timerInterval = null;
         let roundStarted = false;
-        let sessionStartTime = 0;
-        let maxLevelReached = 1;
         
         // Adaptives System
         let consecutiveFast = 0;
@@ -660,13 +657,11 @@ const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
                 document.getElementById('practiceControls').classList.remove('active');
                 document.getElementById('scoreBoard').classList.remove('hidden');
                 document.getElementById('timerBar').classList.remove('hidden');
-                document.getElementById('backControls').classList.add('hidden');
             } else {
                 currentLevel = practiceLevel;
                 document.getElementById('practiceControls').classList.add('active');
                 document.getElementById('scoreBoard').classList.add('hidden');
                 document.getElementById('timerBar').classList.add('hidden');
-                document.getElementById('backControls').classList.remove('hidden');
             }
 
             updateDisplay();
@@ -678,8 +673,6 @@ const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
             document.getElementById('startOverlay').classList.remove('active');
             document.getElementById('gameScreen').classList.remove('active');
             document.getElementById('startScreen').classList.remove('hidden');
-            document.getElementById('backBtn').classList.remove('hidden');
-            document.getElementById('backControls').classList.remove('hidden');
         }
 
         function showStartState() {
@@ -790,6 +783,7 @@ const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
             consecutiveSlow++;
             checkLevelAdapt('slow');
             
+            // Runde hochzählen und Overlay zeigen
             currentRound++;
             if (gameMode === 'play' && currentRound > MAX_ROUNDS) {
                 setTimeout(() => endSession(), 1500);
@@ -988,6 +982,7 @@ const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
                 }
             }
             
+            // Nach Klick: Runde hochzählen und Overlay zeigen
             currentRound++;
             if (gameMode === 'play' && currentRound > MAX_ROUNDS) {
                 setTimeout(() => endSession(), 1500);
@@ -1016,7 +1011,6 @@ const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
             if (type === 'fast' && consecutiveFast >= ADAPT_THRESHOLD && currentLevel < 6) {
                 currentLevel++;
                 consecutiveFast = 0;
-                if(currentLevel>maxLevelReached)maxLevelReached=currentLevel;
                 showLevelChange('⬆️ Level erhöht!');
             } else if (type === 'slow' && consecutiveSlow >= ADAPT_THRESHOLD && currentLevel > 1) {
                 currentLevel--;
@@ -1032,7 +1026,19 @@ const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
             document.getElementById('startOverlay').classList.remove('active');
             const durationSeconds = Math.round((Date.now() - sessionStartTime) / 1000);
             await saveSession(durationSeconds);
-            showEndScreen(durationSeconds);
+            sessionStorage.setItem('fex_last_game', JSON.stringify({
+                id: 'drei-tiere',
+                name: 'Drei Tiere',
+                ef: 'Arbeitsged\u00e4chtnis',
+                emoji: '\ud83d\udc18',
+                bg: '#e6eef8',
+                file: 'drei-tiere.html',
+                reflex: 'Wie hast du dir gemerkt, welches Tier genau 3 Mal vorkam?',
+                lastLevel: maxLevelReached,
+                correctCount: correctCount,
+                durationSeconds: durationSeconds
+            }));
+            window.location.href = 'fex-schueler.html';
         }
 
         async function saveSession(durationSeconds) {
@@ -1046,49 +1052,6 @@ const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
                 correct_count: correctCount,
                 duration_seconds: durationSeconds
             });
-        }
-
-        function showEndScreen(durationSeconds) {
-            const pct = Math.round((correctCount / MAX_ROUNDS) * 100);
-            let summary = '';
-            if (pct >= 80) summary = 'Ausgezeichnet! Du hast sehr gut aufgepasst.';
-            else if (pct >= 60) summary = 'Gut gemacht! Noch etwas Übung und du wirst noch besser.';
-            else if (pct >= 40) summary = 'Nicht schlecht! Mit mehr Übung wird es leichter.';
-            else summary = 'Weiter üben – du schaffst das!';
-
-            const mins = Math.floor(durationSeconds / 60);
-            const secs = durationSeconds % 60;
-            const timeStr = mins > 0 ? mins + ' Min. ' + secs + ' Sek.' : secs + ' Sek.';
-            const emoji = pct >= 80 ? '&#127775;' : pct >= 60 ? '&#128077;' : pct >= 40 ? '&#128170;' : '&#128260;';
-
-            document.getElementById('gameArea').innerHTML = '';
-            document.getElementById('result').textContent = '';
-            document.getElementById('timerBar').classList.add('hidden');
-            document.getElementById('scoreBoard').classList.add('hidden');
-            document.getElementById('instruction').textContent = '';
-
-            const endDiv = document.createElement('div');
-            endDiv.style.cssText = 'text-align:center;padding:20px;max-width:400px;width:100%;';
-            endDiv.innerHTML =
-                '<div style="font-size:2.5rem;margin-bottom:12px;">' + emoji + '</div>' +
-                '<div style="font-size:1.1rem;font-weight:600;color:#333;margin-bottom:8px;">Session abgeschlossen!</div>' +
-                '<div style="font-size:0.95rem;color:#666;margin-bottom:20px;line-height:1.5;">' + summary + '</div>' +
-                '<div style="display:flex;gap:12px;justify-content:center;margin-bottom:24px;flex-wrap:wrap;">' +
-                    '<div style="border:2px solid #333;border-radius:10px;padding:10px 18px;min-width:90px;">' +
-                        '<div style="font-size:0.65rem;color:#888;text-transform:uppercase;letter-spacing:.5px;">Richtig</div>' +
-                        '<div style="font-size:1.6rem;font-weight:700;color:#333;">' + correctCount + '/' + MAX_ROUNDS + '</div>' +
-                    '</div>' +
-                    '<div style="border:2px solid #333;border-radius:10px;padding:10px 18px;min-width:90px;">' +
-                        '<div style="font-size:0.65rem;color:#888;text-transform:uppercase;letter-spacing:.5px;">Max. Level</div>' +
-                        '<div style="font-size:1.6rem;font-weight:700;color:#333;">' + maxLevelReached + '</div>' +
-                    '</div>' +
-                    '<div style="border:2px solid #333;border-radius:10px;padding:10px 18px;min-width:90px;">' +
-                        '<div style="font-size:0.65rem;color:#888;text-transform:uppercase;letter-spacing:.5px;">Zeit</div>' +
-                        '<div style="font-size:1.6rem;font-weight:700;color:#333;">' + timeStr + '</div>' +
-                    '</div>' +
-                '</div>' +
-                '<button class="btn primary" onclick="backToStart()" style="width:100%;max-width:280px;">Zurück zum Start</button>';
-            document.getElementById('gameArea').appendChild(endDiv);
         }
 
         function showLevelChange(message) {
