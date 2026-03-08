@@ -813,10 +813,15 @@
     const password = prompt('Passwort (mind. 6 Zeichen):');
     if (!password || password.length < 6) { alert('Passwort zu kurz.'); return; }
 
-    // Account via Supabase Admin API – hier verwenden wir signUp
-    // Hinweis: In Produktion sollte das über eine Server-Funktion laufen
-    const { data: authData, error: authError } = await db.auth.signUp({ email, password });
+    // Zweiten Supabase-Client ohne Session-Persistenz verwenden
+    // damit die LP-Session nicht überschrieben wird
+    const tempClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false }
+    });
+
+    const { data: authData, error: authError } = await tempClient.auth.signUp({ email, password });
     if (authError) { alert('Fehler: ' + authError.message); return; }
+    if (!authData.user) { alert('Account konnte nicht erstellt werden.'); return; }
 
     // Profil anlegen
     const { error: profileError } = await db.from('profiles').insert({
@@ -828,7 +833,7 @@
 
     if (profileError) { alert('Account erstellt, aber Profil konnte nicht gespeichert werden: ' + profileError.message); return; }
 
-    alert(`✓ ${name} wurde erfolgreich hinzugefügt.`);
+    alert('✓ ' + name + ' wurde erfolgreich hinzugefügt.');
     await loadClass(currentClassId);
   }
 
