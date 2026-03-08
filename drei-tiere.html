@@ -319,17 +319,19 @@
         }
 
         .back-btn {
-            background: none;
-            border: 1.5px solid #ccc;
-            border-radius: 8px;
-            padding: 8px 20px;
-            font-size: 0.85rem;
-            color: #666;
+            width: 100%;
+            max-width: 280px;
+            padding: clamp(15px, 4vw, 25px) clamp(20px, 5vw, 40px);
+            font-size: clamp(1rem, 3vw, 1.3rem);
+            border: 3px solid #ccc;
+            border-radius: 12px;
+            background: #fff;
+            color: #999;
             cursor: pointer;
             font-family: inherit;
-            margin-top: 8px;
+            font-weight: 600;
         }
-        .back-btn:hover { border-color: #999; color: #333; }
+        .back-btn:hover { border-color: #999; color: #666; }
         .back-controls {
             position: fixed;
             bottom: 0;
