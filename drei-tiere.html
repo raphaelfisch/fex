@@ -651,6 +651,7 @@ const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
             maxLevelReached = 1;
             document.getElementById('backBtn').classList.add('hidden');
             document.getElementById('startScreen').classList.add('hidden');
+            if (mode === 'play') enableAbbruchSchutz();
             document.getElementById('gameScreen').classList.add('active');
 
             if (mode === 'play') {
@@ -1025,8 +1026,44 @@ const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
         }
 
 
+
+        // ===== ABBRUCH-SCHUTZ =====
+        function enableAbbruchSchutz() {
+            history.pushState(null, '', window.location.href);
+            window.addEventListener('popstate', handlePopstate);
+            window.addEventListener('beforeunload', handleBeforeUnload);
+        }
+        function disableAbbruchSchutz() {
+            window.removeEventListener('popstate', handlePopstate);
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        }
+        function handleBeforeUnload(e) {
+            if (gameMode === 'play' && document.getElementById('gameScreen').classList.contains('active')) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        }
+        function handlePopstate(e) {
+            if (gameMode === 'play' && document.getElementById('gameScreen').classList.contains('active')) {
+                history.pushState(null, '', window.location.href);
+                showAbbruch();
+            }
+        }
+        function showAbbruch() {
+            document.getElementById('abbruchOverlay').style.display = 'flex';
+        }
+        function closeAbbruch() {
+            document.getElementById('abbruchOverlay').style.display = 'none';
+        }
+        function confirmAbbruch() {
+            closeAbbruch();
+            disableAbbruchSchutz();
+            backToStart();
+        }
+
         // ===== SESSION ENDE =====
         async function endSession() {
+            disableAbbruchSchutz();
             if (timerInterval) clearInterval(timerInterval);
             document.getElementById('startOverlay').classList.remove('active');
             const durationSeconds = Math.round((Date.now() - sessionStartTime) / 1000);
@@ -1068,5 +1105,19 @@ const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
         }
     
     </script>
+
+    <!-- ABBRUCH-WARNUNG -->
+    <div id="abbruchOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:16px;padding:28px 24px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.2);text-align:center;">
+        <div style="font-size:2rem;margin-bottom:12px;">&#9888;&#65039;</div>
+        <div style="font-size:1rem;font-weight:600;color:#333;margin-bottom:10px;">Spiel abbrechen?</div>
+        <div style="font-size:0.88rem;color:#666;line-height:1.6;margin-bottom:22px;">Dein Fortschritt geht verloren und die Session wird nicht gespeichert.</div>
+        <div style="display:flex;gap:10px;justify-content:center;">
+          <button onclick="closeAbbruch()" style="flex:1;padding:11px;border:1.5px solid #ddd;border-radius:10px;background:#fff;color:#666;font-size:.9rem;font-weight:600;cursor:pointer;font-family:inherit;">Weiterspielen</button>
+          <button onclick="confirmAbbruch()" style="flex:1;padding:11px;border:none;border-radius:10px;background:#b03030;color:#fff;font-size:.9rem;font-weight:600;cursor:pointer;font-family:inherit;">Abbrechen</button>
+        </div>
+      </div>
+    </div>
+
 </body>
 </html>
