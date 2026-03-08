@@ -249,8 +249,12 @@
     </div>
     <div style="display:flex;flex-direction:column;gap:14px;">
       <div>
-        <label style="display:block;font-size:.72rem;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Name</label>
-        <input id="studentName" type="text" placeholder="z.B. Lena Müller" autocomplete="off" style="width:100%;padding:11px 14px;border:1.5px solid #ddd;border-radius:10px;font-size:.95rem;font-family:'DM Sans',sans-serif;outline:none;" onfocus="this.style.borderColor='#1a1a1a'" onblur="this.style.borderColor='#ddd'">
+        <label style="display:block;font-size:.72rem;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Vorname</label>
+        <input id="studentFirstName" type="text" placeholder="z.B. Lena" autocomplete="off" style="width:100%;padding:11px 14px;border:1.5px solid #ddd;border-radius:10px;font-size:.95rem;font-family:'DM Sans',sans-serif;outline:none;" onfocus="this.style.borderColor='#1a1a1a'" onblur="this.style.borderColor='#ddd'">
+      </div>
+      <div>
+        <label style="display:block;font-size:.72rem;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Nachname</label>
+        <input id="studentLastName" type="text" placeholder="z.B. Müller" autocomplete="off" style="width:100%;padding:11px 14px;border:1.5px solid #ddd;border-radius:10px;font-size:.95rem;font-family:'DM Sans',sans-serif;outline:none;" onfocus="this.style.borderColor='#1a1a1a'" onblur="this.style.borderColor='#ddd'">
       </div>
       <div>
         <label style="display:block;font-size:.72rem;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">E-Mail</label>
@@ -516,16 +520,19 @@ function showNewStudentModal(){
   document.getElementById('studentModal').style.display='flex';
   setTimeout(()=>document.getElementById('studentName').focus(),100);
 }
-function closeStudentModal(){document.getElementById('studentModal').style.display='none';}
+function closeStudentModal(){document.getElementById('studentModal').style.display='none';document.getElementById('studentFirstName').value='';document.getElementById('studentLastName').value='';}
 
 async function submitNewStudent(){
-  const name=document.getElementById('studentName').value.trim();
+  const firstName=document.getElementById('studentFirstName').value.trim();
+  const lastName=document.getElementById('studentLastName').value.trim();
+  const name=(firstName+' '+lastName).trim();
   const email=document.getElementById('studentEmail').value.trim();
   const password=document.getElementById('studentPassword').value;
   const errorEl=document.getElementById('studentError');
   const btn=document.getElementById('studentSubmitBtn');
   errorEl.textContent='';
-  if(!name){errorEl.textContent='Bitte Namen eingeben.';return;}
+  if(!firstName){errorEl.textContent='Bitte Vornamen eingeben.';return;}
+  if(!lastName){errorEl.textContent='Bitte Nachnamen eingeben.';return;}
   if(!email||!email.includes('@')){errorEl.textContent='Bitte gültige E-Mail eingeben.';return;}
   if(password.length<6){errorEl.textContent='Passwort muss mind. 6 Zeichen haben.';return;}
   btn.disabled=true;btn.textContent='…';
