@@ -557,6 +557,7 @@
     <!-- START/WEITER OVERLAY -->
     <div class="start-overlay" id="startOverlay">
         <button class="btn primary" id="startBtn" onclick="startRound()">Start</button>
+        <button class="btn primary" id="reflexBtn" onclick="endSession()" style="display:none;">Zur Reflexion →</button>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -861,15 +862,21 @@
             if (currentLevel > maxLevelReached) maxLevelReached = currentLevel;
             // Runde hochzählen und Overlay zeigen
             currentRound++;
-            setTimeout(() => {
-                if (currentRound > MAX_ROUNDS && gameMode === 'play') {
-                    endSession();
-                } else {
-                    const startBtn = document.getElementById('startBtn');
-                    startBtn.textContent = currentRound <= MAX_ROUNDS ? 'Weiter (' + (currentRound) + '/10)' : 'Weiter';
+            if (currentRound > MAX_ROUNDS && gameMode === 'play') {
+                setTimeout(() => {
+                    document.getElementById('startBtn').style.display = 'none';
+                    document.getElementById('reflexBtn').style.display = '';
                     document.getElementById('startOverlay').classList.add('active');
-                }
-            }, 1500);
+                }, 1500);
+            } else {
+                setTimeout(() => {
+                    document.getElementById('startBtn').style.display = '';
+                    document.getElementById('reflexBtn').style.display = 'none';
+                    const startBtn = document.getElementById('startBtn');
+                    startBtn.textContent = 'Weiter (' + currentRound + '/10)';
+                    document.getElementById('startOverlay').classList.add('active');
+                }, 1500);
+            }
         }
 
         // ===== SPIELLOGIK =====
@@ -1060,15 +1067,21 @@
             
             // Nach Klick: Runde hochzählen und Overlay zeigen
             currentRound++;
-            setTimeout(() => {
-                if (currentRound > MAX_ROUNDS && gameMode === 'play') {
-                    endSession();
-                } else {
-                    const startBtn = document.getElementById('startBtn');
-                    startBtn.textContent = currentRound <= MAX_ROUNDS ? 'Weiter (' + (currentRound) + '/10)' : 'Weiter';
+            if (currentRound > MAX_ROUNDS && gameMode === 'play') {
+                setTimeout(() => {
+                    document.getElementById('startBtn').style.display = 'none';
+                    document.getElementById('reflexBtn').style.display = '';
                     document.getElementById('startOverlay').classList.add('active');
-                }
-            }, 1500);
+                }, 1500);
+            } else {
+                setTimeout(() => {
+                    document.getElementById('startBtn').style.display = '';
+                    document.getElementById('reflexBtn').style.display = 'none';
+                    const startBtn = document.getElementById('startBtn');
+                    startBtn.textContent = 'Weiter (' + currentRound + '/10)';
+                    document.getElementById('startOverlay').classList.add('active');
+                }, 1500);
+            }
         }
 
         function revealSolution() {
