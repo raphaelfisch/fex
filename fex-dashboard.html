@@ -512,7 +512,7 @@
     container.innerHTML = currentClasses.map(cl =>
       `<div class="class-pill${cl.id === currentClassId ? ' active-pill' : ''}" style="display:inline-flex;align-items:center;gap:5px;">
         <span onclick="switchClass('${cl.id}')">${cl.name}</span>
-        <span onclick="confirmDeleteClass('${cl.id}','${cl.name.replace(/'/g,"\'")}')" style="opacity:0.45;font-size:.7rem;cursor:pointer;padding:0 1px;" title="Klasse löschen">✕</span>
+        <span onclick="confirmDeleteClass('${cl.id}','${cl.name.replace(/'/g,"\'")}')" style="opacity:0.45;font-size:.7rem;cursor:pointer;padding:0 2px;" title="Klasse löschen">✕</span>
       </div>`
     ).join('') + `<div class="class-pill" onclick="showNewClassModal()">+ Klasse</div>`;
   }
@@ -812,7 +812,7 @@
       .eq('class_id', classId).eq('role', 'student');
     const n = count || 0;
     const warning = n > 0
-      ? `⚠️ ACHTUNG – diese Aktion kann nicht rückgängig gemacht werden!\n\nKlasse „${className}" löschen?\n\nDabei werden unwiderruflich gelöscht:\n• ${n} Schüler/in${n !== 1 ? 'nen' : ''}\n• Alle zugehörigen Sessions\n• Alle zugehörigen Reflexionen\n\nJetzt löschen?`
+      ? `⚠️ ACHTUNG – diese Aktion kann nicht rückgängig gemacht werden!\n\nKlasse „${className}" löschen?\n\nDabei werden unwiderruflich gelöscht:\n• ${n} Schüler/in${n !== 1 ? 'nen' : ''}\n• Alle Sessions\n• Alle Reflexionen\n\nJetzt löschen?`
       : `Klasse „${className}" löschen?\n\nDie Klasse ist leer und wird unwiderruflich gelöscht.\n\nJetzt löschen?`;
     if (!confirm(warning)) return;
     await deleteClass(classId);
@@ -827,12 +827,21 @@
       await db.from('reflections').delete().in('user_id', ids);
       await db.from('sessions').delete().in('user_id', ids);
       await db.from('profiles').delete().in('id', ids);
+
+      // Auth-User via Edge Function löschen
+      const { data: { session } } = await db.auth.getSession();
+      const resp = await fetch(`${SUPABASE_URL}/functions/v1/delete-user`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify({ userIds: ids })
+      });
+      if (!resp.ok) console.warn('Edge Function Fehler:', await resp.text());
     }
 
     const { error } = await db.from('classes').delete().eq('id', classId);
     if (error) { alert('Fehler beim Löschen: ' + error.message); return; }
 
-    currentClasses = currentClasses.filter(c => c.id !== classId);
+    currentClasses = currentClasses.filter(cl => cl.id !== classId);
     if (currentClasses.length > 0) {
       currentClassId = currentClasses[0].id;
       renderClassPills();
@@ -843,6 +852,7 @@
       showEmptyState();
     }
   }
+
 
   // ── SCHÜLER/IN ERSTELLEN ──────────────────────────────────────
   async function showNewStudentModal() {
