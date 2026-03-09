@@ -653,6 +653,11 @@
                 enableAbbruchSchutz();
             } else {
                 document.getElementById('back-controls-div').classList.remove('hidden');
+                document.getElementById('practiceControls').classList.add('active');
+                document.getElementById('scoreBoard').classList.add('hidden');
+                // Übungsmodus: sofort Start-State zeigen, warte auf Level-Wahl + Start
+                showStartState();
+                return;
             }
 
             if (mode === 'play') {
@@ -768,6 +773,14 @@
             // Overlay mit Start/Weiter anzeigen
             const startBtn = document.getElementById('startBtn');
             startBtn.textContent = currentRound === 1 ? 'Start' : 'Weiter';
+            // Im Übungsmodus beim ersten Start: deaktiviert bis Level gewählt
+            if (gameMode === 'practice' && currentRound === 1) {
+                startBtn.disabled = true;
+                startBtn.style.opacity = '0.4';
+            } else {
+                startBtn.disabled = false;
+                startBtn.style.opacity = '';
+            }
             document.getElementById('startOverlay').classList.add('active');
             
             // Timer zurücksetzen
@@ -794,11 +807,15 @@
             
             updateDisplay();
             
-            // Falls schon eine Runde lief, zeige Start-State
-            if (roundStarted) {
-                if (timerInterval) clearInterval(timerInterval);
-                showStartState();
-                roundStarted = false;
+            // Level gewechselt → immer Start-State zeigen
+            if (timerInterval) clearInterval(timerInterval);
+            showStartState();
+            roundStarted = false;
+            // Start-Button aktivieren (Level wurde gewählt)
+            const startBtn = document.getElementById('startBtn');
+            if (startBtn) {
+                startBtn.disabled = false;
+                startBtn.style.opacity = '';
             }
         }
 
