@@ -215,7 +215,7 @@
   <!-- VIEW: SCHÜLER/INNEN -->
   <div class="view" id="view-schueler">
     <div class="card">
-      <div class="card-header"><div class="card-title">Schüler/innen verwalten</div><div style="display:flex;gap:6px;"><button class="btn-small" onclick="showImportModal()" style="background:#fff;color:#1a1a1a;border:1.5px solid #ddd;">⬆ Import</button><button class="btn-small" onclick="showNewStudentModal()">+ Schüler/in</button></div></div>
+      <div class="card-header"><div class="card-title">Schüler/innen verwalten</div></div>
       <div class="student-list" id="studentListFull"><div class="empty-hint">Lade…</div></div>
     </div>
   </div>
@@ -411,20 +411,23 @@ async function loadClass(classId){
 function renderStudentList(students,todaySet,sessCount,lastMap,listId){
   const list=document.getElementById(listId);
   if(!students.length){list.innerHTML='<div class="empty-hint">Noch keine Schüler/innen.</div>';return;}
+  const isFull=listId==='studentListFull';
   list.innerHTML=students.map(s=>{
     const active=todaySet.has(s.id);const sess=sessCount[s.id]||0;const lastRaw=lastMap[s.id];
     const days=lastRaw?(Date.now()-new Date(lastRaw))/86400000:999;
     const initials=s.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
     const dotClass=active?'dot-green':days<5?'dot-orange':'dot-red';
     const metaColor=days>5?'color:var(--orange)':'color:var(--text-ter)';
-    return `<div class="student-row" onclick="openPanel('${s.id}','${s.name.replace(/'/g,"\\'")}')">
+    const safeId=s.id.replace(/'/g,"\'");
+    const safeName=s.name.replace(/'/g,"\'");
+    const deleteBtn=isFull?`<span onclick="event.stopPropagation();confirmDeleteStudent('${safeId}','${safeName}')" style="opacity:0.3;font-size:.8rem;cursor:pointer;padding:2px 5px;border-radius:4px;transition:opacity .15s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.3'" title="Schüler/in löschen">✕</span>`:'';
+    return `<div class="student-row" onclick="openPanel('${safeId}','${safeName}')">
       <div class="student-avatar">${initials}</div>
       <div class="student-info"><div class="student-name">${s.name}</div><div class="student-meta" style="${metaColor}">Zuletzt: ${lastRaw?formatRelativeDate(lastRaw):'Noch nie'}</div></div>
-      <div class="student-status"><div class="session-count">${sess}/3</div><div class="dot ${dotClass}"></div></div>
+      <div class="student-status"><div class="session-count">${sess}/3</div><div class="dot ${dotClass}"></div>${deleteBtn}</div>
     </div>`;
   }).join('');
 }
-
 function renderActivityFeed(sessions,reflections,students){
   const nameMap=Object.fromEntries(students.map(s=>[s.id,s.name]));
   const today=new Date().toISOString().split('T')[0];
@@ -640,6 +643,37 @@ function alertPopup(msg, title='Hinweis'){
 }
 
 async function doLogout(){await db.auth.signOut();window.location.href='login.html';}
+
+// ── SCHÜLER LÖSCHEN ───────────────────────────────────────────
+function confirmDeleteStudent(studentId, studentName) {
+  window._pendingDeleteStudentId = studentId;
+  window._pendingDeleteStudentName = studentName;
+  showPopup({
+    title: 'Schüler/in löschen',
+    msg: `<strong>${studentName}</strong> wirklich löschen?<br><br>Dabei werden unwiderruflich gelöscht:<br>• Der Account<br>• Alle Sessions<br>• Alle Reflexionen`,
+    actions: [
+      { label: 'Abbrechen', style: 'secondary', fn: 'closePopup()' },
+      { label: 'Löschen', style: 'danger', fn: 'closePopup();deleteStudent(window._pendingDeleteStudentId)' }
+    ]
+  });
+}
+
+async function deleteStudent(studentId) {
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    await db.from('reflections').delete().eq('user_id', studentId);
+    await db.from('sessions').delete().eq('user_id', studentId);
+    await db.from('profiles').delete().eq('id', studentId);
+    await fetch(`${SUPABASE_URL}/functions/v1/delete-user`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+      body: JSON.stringify({ userIds: [studentId] })
+    });
+    await loadClass(currentClassId);
+  } catch(e) {
+    alertPopup('Fehler beim Löschen: ' + e.message, 'Fehler');
+  }
+}
 
 // ── IMPORT ────────────────────────────────────────────────────
 let importParsedStudents = [];
