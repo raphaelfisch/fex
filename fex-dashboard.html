@@ -660,15 +660,12 @@ function confirmDeleteStudent(studentId, studentName) {
 
 async function deleteStudent(studentId) {
   try {
-    const { data: { session } } = await db.auth.getSession();
     await db.from('reflections').delete().eq('user_id', studentId);
     await db.from('sessions').delete().eq('user_id', studentId);
     await db.from('profiles').delete().eq('id', studentId);
-    await fetch(`${SUPABASE_URL}/functions/v1/delete-user`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-      body: JSON.stringify({ userIds: [studentId] })
-    });
+    const{data:{session}}=await db.auth.getSession();
+    const resp=await fetch(`${SUPABASE_URL}/functions/v1/delete-user`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.access_token}`},body:JSON.stringify({userIds:[studentId]})});
+    if(!resp.ok)console.warn('Edge Function Fehler:',await resp.text());
     await loadClass(currentClassId);
   } catch(e) {
     alertPopup('Fehler beim Löschen: ' + e.message, 'Fehler');
