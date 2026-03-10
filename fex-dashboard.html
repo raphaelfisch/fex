@@ -184,7 +184,8 @@
   .popup-btn.secondary:hover{background:var(--bg);}
 
   /* RESPONSIVE */
-  @media(max-width:900px){.progress-grid{grid-template-columns:repeat(2,1fr);}.bottom-row{grid-template-columns:1fr;}}
+  .s-last-inline{display:none;}
+  @media(max-width:640px){.s-last-col{display:none;}.s-last-inline{display:block;font-size:.65rem;margin-top:1px;}}
   @media(max-width:640px){
     .sidebar{transform:translateX(-100%);}.sidebar.open{transform:translateX(0);}.main{margin-left:0;}
     .hamburger{display:flex;}.topbar{padding:10px 14px;}.date-label{display:none;}
@@ -197,8 +198,10 @@
     .stat-item:last-child{border-radius:0 0 11px 0!important;}
     .bottom-row{grid-template-columns:1fr;}
     .progress-grid{grid-template-columns:1fr;}
-    .student-row{grid-template-columns:28px 1fr 44px 28px;}
-    .student-row .s-last{display:none;}
+    .student-row{grid-template-columns:1fr 44px 70px 28px;}
+    .student-row .avatar{display:none;}
+    .student-row.hdr > div:first-child{display:none;}
+    .s-last-inline{display:none!important;}
     .card-tabs-right{width:100%;padding:6px 0 4px;order:10;}
     .search-box{width:100%;}
     .topbar-right .btn-outline{display:none;}
@@ -530,9 +533,9 @@ function renderStudentList(students,todayIds,sessCount,lastMap){
     const safeName=s.name.replace(/'/g,"\\'");
     return `<div class="student-row">
       <div class="avatar">${initials}</div>
-      <div><div class="s-name">${s.name}</div><div class="s-meta">${gameName}</div></div>
+      <div><div class="s-name">${s.name}</div><div class="s-meta">${gameName}</div><div class="s-last s-last-inline ${days>=5?'warn':days===999?'never':''}">${_lastMap[s.id]?formatRelativeDate(_lastMap[s.id]):'Noch nie'}</div></div>
       <div class="s-sessions">${_sessCount[s.id]||0}</div>
-      <div class="s-last ${days>=5?'warn':days===999?'never':''}">${_lastMap[s.id]?formatRelativeDate(_lastMap[s.id]):'Noch nie'}</div>
+      <div class="s-last s-last-col ${days>=5?'warn':days===999?'never':''}">${_lastMap[s.id]?formatRelativeDate(_lastMap[s.id]):'Noch nie'}</div>
       <div class="row-actions">
         <button class="dot-menu" onclick="toggleMenu(event,'menu-${safeId}')">···</button>
         <div class="dropdown" id="menu-${safeId}">
