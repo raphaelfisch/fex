@@ -776,8 +776,10 @@
                     showFeedback(false);
                     
                     if (gameMode === 'spielmodus') {
-                        // Game Over im Spielmodus
-                        setTimeout(() => endGame(), 500);
+                        // Weiterspielen (Game Over erst nach 10 Tieren)
+                        setTimeout(() => {
+                            if (isPlaying) showAnimal();
+                        }, 400);
                     } else {
                         // Im Übungsmodus weiterspielen
                         setTimeout(() => {
