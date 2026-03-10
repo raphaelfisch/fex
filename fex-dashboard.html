@@ -560,21 +560,21 @@ async function confirmDeleteClass(classId,className){
 }
 
 async function deleteClass(classId){
-  const{data:students}=await db.from('profiles').select('id').eq('class_id',classId).eq('role','student');
-  const ids=(students||[]).map(s=>s.id);
-  if(ids.length>0){
-    await db.from('reflections').delete().in('user_id',ids);
-    await db.from('sessions').delete().in('user_id',ids);
-    await db.from('profiles').delete().in('id',ids);
-    const{data:{session}}=await db.auth.getSession();
-    const resp=await fetch(`${SUPABASE_URL}/functions/v1/delete-user`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.access_token}`},body:JSON.stringify({userIds:ids})});
-    if(!resp.ok)console.warn('Edge Function Fehler:',await resp.text());
-  }
-  const{error}=await db.from('classes').delete().eq('id',classId);
-  if(error){alertPopup('Fehler: '+error.message,'Fehler');return;}
-  currentClasses=currentClasses.filter(cl=>cl.id!==classId);
-  if(currentClasses.length>0){currentClassId=currentClasses[0].id;renderClassPills();await loadClass(currentClassId);}
-  else{currentClassId=null;renderClassPills();showNoClassState();}
+  try{
+    const{data:students}=await db.from('profiles').select('id').eq('class_id',classId).eq('role','student');
+    const ids=(students||[]).map(s=>s.id);
+    if(ids.length>0){
+      // Edge Function löscht Reflexionen, Sessions, Profil und Auth-User
+      const{data:{session}}=await db.auth.getSession();
+      const resp=await fetch(`${SUPABASE_URL}/functions/v1/delete-user`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.access_token}`},body:JSON.stringify({userIds:ids})});
+      if(!resp.ok)throw new Error(await resp.text());
+    }
+    const{error}=await db.from('classes').delete().eq('id',classId);
+    if(error)throw new Error(error.message);
+    currentClasses=currentClasses.filter(cl=>cl.id!==classId);
+    if(currentClasses.length>0){currentClassId=currentClasses[0].id;renderClassPills();await loadClass(currentClassId);}
+    else{currentClassId=null;renderClassPills();showNoClassState();}
+  }catch(e){alertPopup('Fehler beim Löschen: '+e.message,'Fehler');}
 }
 
 function showNewStudentModal(){
@@ -660,12 +660,10 @@ function confirmDeleteStudent(studentId, studentName) {
 
 async function deleteStudent(studentId) {
   try {
-    await db.from('reflections').delete().eq('user_id', studentId);
-    await db.from('sessions').delete().eq('user_id', studentId);
-    await db.from('profiles').delete().eq('id', studentId);
     const{data:{session}}=await db.auth.getSession();
+    // Edge Function löscht Reflexionen, Sessions, Profil und Auth-User
     const resp=await fetch(`${SUPABASE_URL}/functions/v1/delete-user`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.access_token}`},body:JSON.stringify({userIds:[studentId]})});
-    if(!resp.ok)console.warn('Edge Function Fehler:',await resp.text());
+    if(!resp.ok)throw new Error(await resp.text());
     await loadClass(currentClassId);
   } catch(e) {
     alertPopup('Fehler beim Löschen: ' + e.message, 'Fehler');
