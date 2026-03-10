@@ -173,6 +173,7 @@
     <div class="topbar-right">
       <div class="date-label" id="dateLabel"></div>
       <button class="btn-small" id="topbarAction" onclick="showNewStudentModal()">+ Schüler/in</button>
+      <button class="btn-small" id="topbarImport" onclick="showImportModal()" style="background:#fff;color:#1a1a1a;border:1.5px solid #ddd;margin-left:6px;">⬆ Import</button>
     </div>
   </div>
 
@@ -214,7 +215,7 @@
   <!-- VIEW: SCHÜLER/INNEN -->
   <div class="view" id="view-schueler">
     <div class="card">
-      <div class="card-header"><div class="card-title">Schüler/innen verwalten</div><button class="btn-small" onclick="showNewStudentModal()">+ Schüler/in</button></div>
+      <div class="card-header"><div class="card-title">Schüler/innen verwalten</div><div style="display:flex;gap:6px;"><button class="btn-small" onclick="showImportModal()" style="background:#fff;color:#1a1a1a;border:1.5px solid #ddd;">⬆ Import</button><button class="btn-small" onclick="showNewStudentModal()">+ Schüler/in</button></div></div>
       <div class="student-list" id="studentListFull"><div class="empty-hint">Lade…</div></div>
     </div>
   </div>
@@ -237,6 +238,60 @@
     <div class="popup-msg" id="popupMsg"></div>
     <input class="popup-input" id="popupInput" type="text" style="display:none">
     <div class="popup-actions" id="popupActions"></div>
+  </div>
+</div>
+
+<!-- IMPORT MODAL -->
+<div id="importModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:16px;padding:28px 24px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.15);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;">
+      <div style="font-size:1rem;font-weight:600;">Schüler/innen importieren</div>
+      <button onclick="closeImportModal()" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#999;">✕</button>
+    </div>
+    <!-- Schritt 1: Datei + Passwort -->
+    <div id="importStep1">
+      <!-- Drag & Drop Zone -->
+      <div id="importDropZone"
+        ondragover="event.preventDefault();this.style.borderColor='#1a1a1a';this.style.background='#f5f5f5';"
+        ondragleave="this.style.borderColor='#ddd';this.style.background='#fafafa';"
+        ondrop="handleImportDrop(event)"
+        onclick="document.getElementById('importFileInput').click()"
+        style="border:2px dashed #ddd;border-radius:12px;padding:32px 20px;text-align:center;cursor:pointer;background:#fafafa;transition:all .15s;margin-bottom:16px;">
+        <div style="font-size:2rem;margin-bottom:8px;">📂</div>
+        <div style="font-weight:600;font-size:.9rem;margin-bottom:4px;">Excel-Datei hierher ziehen</div>
+        <div style="font-size:.78rem;color:#999;">oder klicken zum Auswählen (.xlsx)</div>
+        <div id="importFileName" style="margin-top:10px;font-size:.8rem;color:#1a1a1a;font-weight:500;"></div>
+      </div>
+      <input id="importFileInput" type="file" accept=".xlsx" style="display:none;" onchange="handleImportFile(this.files[0])">
+      <!-- Passwort -->
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:.72rem;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Standard-Passwort für alle</label>
+        <input id="importPassword" type="text" placeholder="Mind. 6 Zeichen" autocomplete="off"
+          style="width:100%;padding:11px 14px;border:1.5px solid #ddd;border-radius:10px;font-size:.95rem;font-family:'DM Sans',sans-serif;outline:none;box-sizing:border-box;"
+          onfocus="this.style.borderColor='#1a1a1a'" onblur="this.style.borderColor='#ddd'">
+        <div style="font-size:.72rem;color:#999;margin-top:5px;">Schüler/innen können es danach selbst ändern.</div>
+      </div>
+      <div id="importStep1Error" style="color:#b03030;font-size:.83rem;min-height:1.1em;margin-bottom:8px;"></div>
+      <button onclick="parseImportFile()" style="width:100%;padding:13px;background:#1a1a1a;color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">Vorschau anzeigen</button>
+    </div>
+    <!-- Schritt 2: Vorschau -->
+    <div id="importStep2" style="display:none;">
+      <div style="font-size:.82rem;color:#666;margin-bottom:12px;" id="importPreviewInfo"></div>
+      <div id="importPreviewList" style="border:1.5px solid #eee;border-radius:10px;overflow:hidden;margin-bottom:16px;max-height:280px;overflow-y:auto;"></div>
+      <div id="importStep2Error" style="color:#b03030;font-size:.83rem;min-height:1.1em;margin-bottom:8px;"></div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="importGoBack()" style="flex:1;padding:12px;background:#fff;color:#1a1a1a;border:1.5px solid #ddd;border-radius:10px;font-size:.9rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">Zurück</button>
+        <button id="importSubmitBtn" onclick="submitImport()" style="flex:2;padding:12px;background:#1a1a1a;color:#fff;border:none;border-radius:10px;font-size:.9rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">Jetzt importieren</button>
+      </div>
+    </div>
+    <!-- Schritt 3: Fortschritt -->
+    <div id="importStep3" style="display:none;text-align:center;padding:20px 0;">
+      <div id="importProgress" style="font-size:.9rem;color:#666;margin-bottom:16px;"></div>
+      <div style="background:#eee;border-radius:8px;height:8px;overflow:hidden;margin-bottom:20px;">
+        <div id="importProgressBar" style="background:#1a1a1a;height:100%;width:0%;transition:width .3s;border-radius:8px;"></div>
+      </div>
+      <div id="importResult" style="font-size:.85rem;"></div>
+    </div>
   </div>
 </div>
 
@@ -584,6 +639,191 @@ function alertPopup(msg, title='Hinweis'){
 }
 
 async function doLogout(){await db.auth.signOut();window.location.href='login.html';}
+
+// ── IMPORT ────────────────────────────────────────────────────
+let importParsedStudents = [];
+let importFileData = null;
+
+function showImportModal() {
+  if (!currentClassId) { alertPopup('Bitte zuerst eine Klasse erstellen.', 'Hinweis'); return; }
+  resetImportModal();
+  document.getElementById('importModal').style.display = 'flex';
+}
+
+function closeImportModal() {
+  document.getElementById('importModal').style.display = 'none';
+  resetImportModal();
+}
+
+function resetImportModal() {
+  importParsedStudents = [];
+  importFileData = null;
+  document.getElementById('importStep1').style.display = 'block';
+  document.getElementById('importStep2').style.display = 'none';
+  document.getElementById('importStep3').style.display = 'none';
+  document.getElementById('importFileName').textContent = '';
+  document.getElementById('importPassword').value = '';
+  document.getElementById('importStep1Error').textContent = '';
+  document.getElementById('importStep2Error').textContent = '';
+  document.getElementById('importFileInput').value = '';
+  const dz = document.getElementById('importDropZone');
+  dz.style.borderColor = '#ddd';
+  dz.style.background = '#fafafa';
+}
+
+function handleImportDrop(e) {
+  e.preventDefault();
+  const dz = document.getElementById('importDropZone');
+  dz.style.borderColor = '#ddd';
+  dz.style.background = '#fafafa';
+  const file = e.dataTransfer.files[0];
+  if (file) handleImportFile(file);
+}
+
+function handleImportFile(file) {
+  if (!file || !file.name.endsWith('.xlsx')) {
+    document.getElementById('importStep1Error').textContent = 'Bitte eine .xlsx-Datei auswählen.';
+    return;
+  }
+  document.getElementById('importStep1Error').textContent = '';
+  document.getElementById('importFileName').textContent = '📄 ' + file.name;
+  const reader = new FileReader();
+  reader.onload = e => { importFileData = e.target.result; };
+  reader.readAsArrayBuffer(file);
+}
+
+async function parseImportFile() {
+  const pw = document.getElementById('importPassword').value.trim();
+  const errEl = document.getElementById('importStep1Error');
+  errEl.textContent = '';
+  if (!importFileData) { errEl.textContent = 'Bitte zuerst eine Excel-Datei auswählen.'; return; }
+  if (pw.length < 6) { errEl.textContent = 'Passwort muss mind. 6 Zeichen haben.'; return; }
+
+  // SheetJS via CDN laden falls noch nicht geladen
+  if (!window.XLSX) {
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+
+  try {
+    const wb = XLSX.read(importFileData, { type: 'array' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+
+    if (!rows.length) { errEl.textContent = 'Die Excel-Datei enthält keine Daten.'; return; }
+
+    // Spalten-Mapping: suche E-Mail, Vorname, Nachname (case-insensitive, mehrere Varianten)
+    const findCol = (row, variants) => {
+      const keys = Object.keys(row);
+      for (const v of variants) {
+        const k = keys.find(k => k.toLowerCase().includes(v.toLowerCase()));
+        if (k) return k;
+      }
+      return null;
+    };
+
+    const sampleRow = rows[0];
+    const emailCol    = findCol(sampleRow, ['e-mail', 'email', 'mail']);
+    const firstCol    = findCol(sampleRow, ['vorname', 'firstname', 'first']);
+    const lastCol     = findCol(sampleRow, ['nachname', 'lastname', 'last', 'name']);
+
+    if (!emailCol) { errEl.textContent = 'Spalte "E-Mail" nicht gefunden.'; return; }
+    if (!firstCol) { errEl.textContent = 'Spalte "Vorname" nicht gefunden.'; return; }
+    if (!lastCol)  { errEl.textContent = 'Spalte "Nachname" nicht gefunden.'; return; }
+
+    importParsedStudents = rows
+      .map(r => ({
+        email:     (r[emailCol] || '').toString().trim(),
+        firstName: (r[firstCol] || '').toString().trim(),
+        lastName:  (r[lastCol]  || '').toString().trim(),
+      }))
+      .filter(s => s.email && s.email.includes('@') && s.firstName && s.lastName);
+
+    if (!importParsedStudents.length) {
+      errEl.textContent = 'Keine gültigen Einträge gefunden (E-Mail, Vorname und Nachname müssen vorhanden sein).';
+      return;
+    }
+
+    // Vorschau rendern
+    document.getElementById('importPreviewInfo').textContent =
+      `${importParsedStudents.length} Schüler/innen erkannt – bitte prüfen:`;
+
+    document.getElementById('importPreviewList').innerHTML = importParsedStudents.map((s, i) =>
+      `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;${i % 2 === 0 ? 'background:#fafafa;' : ''}border-bottom:1px solid #f0f0f0;">
+        <div style="width:30px;height:30px;border-radius:50%;background:#e8e8e8;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:600;color:#666;flex-shrink:0;">${s.firstName[0]}${s.lastName[0]}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:.85rem;font-weight:500;">${s.firstName} ${s.lastName}</div>
+          <div style="font-size:.73rem;color:#999;">${s.email}</div>
+        </div>
+      </div>`
+    ).join('');
+
+    document.getElementById('importStep1').style.display = 'none';
+    document.getElementById('importStep2').style.display = 'block';
+  } catch(e) {
+    errEl.textContent = 'Fehler beim Lesen der Datei: ' + e.message;
+  }
+}
+
+function importGoBack() {
+  document.getElementById('importStep2').style.display = 'none';
+  document.getElementById('importStep1').style.display = 'block';
+}
+
+async function submitImport() {
+  const pw = document.getElementById('importPassword').value.trim();
+  const btn = document.getElementById('importSubmitBtn');
+  btn.disabled = true;
+
+  document.getElementById('importStep2').style.display = 'none';
+  document.getElementById('importStep3').style.display = 'block';
+
+  const total = importParsedStudents.length;
+  let success = 0, failed = 0;
+  const errors = [];
+
+  for (let i = 0; i < total; i++) {
+    const s = importParsedStudents[i];
+    document.getElementById('importProgress').textContent =
+      `Erstelle ${i + 1} von ${total}: ${s.firstName} ${s.lastName}…`;
+    document.getElementById('importProgressBar').style.width = `${Math.round(((i) / total) * 100)}%`;
+
+    try {
+      const name = (s.firstName + ' ' + s.lastName).trim();
+      const tmp = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+      const { data: authData, error: authError } = await tmp.auth.signUp({
+        email: s.email, password: pw, options: { data: { name, role: 'student' } }
+      });
+      if (authError) throw new Error(authError.message);
+      if (!authData.user) throw new Error('Kein User zurückgegeben');
+      await new Promise(r => setTimeout(r, 500));
+      const { error: pErr } = await db.from('profiles').insert({
+        id: authData.user.id, name, role: 'student', class_id: currentClassId
+      });
+      if (pErr) throw new Error('Profil: ' + pErr.message);
+      success++;
+    } catch(e) {
+      failed++;
+      errors.push(`${s.firstName} ${s.lastName} (${s.email}): ${e.message}`);
+    }
+  }
+
+  document.getElementById('importProgressBar').style.width = '100%';
+  document.getElementById('importProgress').textContent = 'Fertig!';
+
+  let resultHtml = `<div style="color:#2a7a4f;font-weight:600;font-size:.95rem;margin-bottom:8px;">✓ ${success} Schüler/innen erstellt</div>`;
+  if (failed > 0) {
+    resultHtml += `<div style="color:#b03030;font-size:.82rem;margin-bottom:8px;">✗ ${failed} Fehler:</div>`;
+    resultHtml += errors.map(e => `<div style="font-size:.75rem;color:#999;margin-bottom:3px;">${e}</div>`).join('');
+  }
+  resultHtml += `<button onclick="closeImportModal();loadClass(currentClassId);" style="margin-top:16px;padding:11px 24px;background:#1a1a1a;color:#fff;border:none;border-radius:10px;font-size:.9rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">Fertig</button>`;
+  document.getElementById('importResult').innerHTML = resultHtml;
+}
+
 </script>
 </body>
 </html>
