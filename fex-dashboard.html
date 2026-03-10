@@ -173,7 +173,7 @@
     <div class="topbar-right">
       <div class="date-label" id="dateLabel"></div>
       <button class="btn-small" id="topbarAction" onclick="showNewStudentModal()">+ Schüler/in</button>
-      <button class="btn-small" id="topbarImport" onclick="showImportModal()" style="background:#fff;color:#1a1a1a;border:1.5px solid #ddd;margin-left:6px;">⬆ Import</button>
+      <button class="btn-small" id="topbarImport" onclick="showImportModal()" style="background:#fff;color:#1a1a1a;border:1.5px solid #ddd;margin-left:6px;display:none;">⬆ Import</button>
     </div>
   </div>
 
@@ -519,6 +519,7 @@ function showView(view){
   const titles={klasse:'Klassenübersicht',fortschritt:'Fortschritt',reflexionen:'Reflexionen',schueler:'Schüler/innen'};
   document.getElementById('pageTitle').textContent=titles[view]||'';
   document.getElementById('topbarAction').style.display=(view==='klasse'||view==='schueler')?'':'none';
+  document.getElementById('topbarImport').style.display=(view==='schueler'||view==='klasse')?'':'none';
   closeSidebar();
 }
 
