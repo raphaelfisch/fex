@@ -62,12 +62,14 @@
 
   /* STAT BAR */
   .stat-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border-radius:12px;overflow:hidden;border:1px solid var(--border);}
-  .stat-item{flex:1;background:var(--surface);padding:13px 18px;display:flex;align-items:center;gap:13px;}
+  .stat-item{background:var(--surface);padding:13px 14px;display:flex;align-items:center;gap:10px;min-width:0;}
   .stat-item:first-child{border-radius:11px 0 0 11px;}
   .stat-item:last-child{border-radius:0 11px 11px 0;}
-  .stat-icon{font-size:1.2rem;opacity:.5;}
-  .stat-val{font-size:1.35rem;font-weight:600;letter-spacing:-.03em;line-height:1;}
-  .stat-lbl{font-size:.67rem;color:var(--text-ter);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;}
+  .stat-icon{font-size:1.2rem;opacity:.5;flex-shrink:0;}
+  .stat-val{font-size:1.35rem;font-weight:600;letter-spacing:-.03em;line-height:1;white-space:nowrap;}
+  .stat-lbl{font-size:.67rem;color:var(--text-ter);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;white-space:nowrap;}
+  .lbl-short{display:none;}
+  .lbl-long{display:inline;}
   .badge{display:inline-block;padding:1px 6px;border-radius:10px;font-size:.62rem;font-weight:500;margin-left:4px;vertical-align:middle;}
   .badge-red{background:var(--red-light);color:var(--red);}
   .badge-green{background:var(--green-light);color:var(--green);}
@@ -88,7 +90,7 @@
   .tab-panel.active{display:block;}
 
   /* SCHÜLERLISTE */
-  .student-row{display:grid;grid-template-columns:32px 1fr 52px minmax(80px,100px) 28px;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--bg);cursor:pointer;transition:background .1s;}
+  .student-row{display:grid;grid-template-columns:32px 1fr 56px 100px 28px;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--bg);cursor:pointer;transition:background .1s;}
   .student-row:hover{background:var(--bg);}
   .student-row:last-child{border-bottom:none;}
   .student-row.hdr{background:var(--bg);border-bottom:1px solid var(--border);cursor:default;padding:8px 18px;}
@@ -199,14 +201,15 @@
     .stat-item:last-child{border-radius:0 0 11px 0!important;}
     .bottom-row{grid-template-columns:1fr;}
     .progress-grid{grid-template-columns:1fr;}
+    .lbl-short{display:inline;}.lbl-long{display:none;}.stat-icon{display:none;}
+    .stat-item{padding:10px 8px;gap:6px;justify-content:center;flex-direction:column;align-items:flex-start;}
+    .stat-bar{grid-template-columns:repeat(4,1fr);}
     .hide-mobile{display:none!important;}
-    .student-row{grid-template-columns:1fr 40px auto 28px;}
+    .student-row{grid-template-columns:1fr 46px 80px 28px;}
     .student-row .avatar{display:none;}
     .student-row.hdr > div:first-child{display:none;}
     .s-last-inline{display:none!important;}
-    .s-name{font-size:.8rem;}
-    .s-last{font-size:.7rem;}
-    .s-sessions{font-size:.75rem;}
+    .s-name{font-size:.8rem;}.s-last{font-size:.7rem;}.s-sessions{font-size:.75rem;}
     .card-tabs-right{width:100%;padding:6px 0 4px;order:10;}
     .search-box{width:100%;}
     .topbar-right .btn-outline{display:none;}
@@ -263,28 +266,28 @@
         <div class="stat-icon">▶</div>
         <div>
           <div class="stat-val" id="statActive">–</div>
-          <div class="stat-lbl">Heute gespielt</div>
+          <div class="stat-lbl"><span class="lbl-long">Heute gespielt</span><span class="lbl-short">Gespielt</span></div>
         </div>
       </div>
       <div class="stat-item">
         <div class="stat-icon">◎</div>
         <div>
           <div class="stat-val" id="statSessions">–</div>
-          <div class="stat-lbl">Sessions heute</div>
+          <div class="stat-lbl"><span class="lbl-long">Sessions heute</span><span class="lbl-short">Sessions</span></div>
         </div>
       </div>
       <div class="stat-item">
         <div class="stat-icon">◷</div>
         <div>
           <div class="stat-val" id="statInactive">–</div>
-          <div class="stat-lbl">Inaktiv 5+ Tage</div>
+          <div class="stat-lbl"><span class="lbl-long">Inaktiv 5+ Tage</span><span class="lbl-short">Inaktiv</span></div>
         </div>
       </div>
       <div class="stat-item">
         <div class="stat-icon">◻</div>
         <div>
           <div class="stat-val" id="statTotal">–</div>
-          <div class="stat-lbl">Schüler/innen</div>
+          <div class="stat-lbl"><span class="lbl-long">Schüler/innen</span><span class="lbl-short">Total</span></div>
         </div>
       </div>
     </div>
