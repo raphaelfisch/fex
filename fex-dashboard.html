@@ -657,7 +657,17 @@ function toggleMenu(e,id){
   e.stopPropagation();
   if(openMenu&&openMenu!==id){document.getElementById(openMenu)?.classList.remove('open');}
   const menu=document.getElementById(id);
-  if(menu){menu.classList.toggle('open');openMenu=menu.classList.contains('open')?id:null;}
+  if(menu){
+    menu.classList.toggle('open');
+    openMenu=menu.classList.contains('open')?id:null;
+    if(openMenu){
+      // Nach unten oder oben öffnen je nach Platz
+      const rect=menu.getBoundingClientRect();
+      const spaceBelow=window.innerHeight-rect.top;
+      if(spaceBelow<120){menu.style.top='auto';menu.style.bottom='28px';}
+      else{menu.style.top='28px';menu.style.bottom='auto';}
+    }
+  }
 }
 document.addEventListener('click',()=>{
   if(openMenu){document.getElementById(openMenu)?.classList.remove('open');openMenu=null;}
