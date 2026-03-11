@@ -83,13 +83,21 @@
 
   /* HAUPTKARTE MIT TABS */
   .main-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
-  .card-tabs{display:flex;align-items:center;border-bottom:1px solid var(--border);padding:0 14px;gap:0;overflow-x:auto;scrollbar-width:none;flex-wrap:wrap;}
+  .card-tabs{display:flex;align-items:center;border-bottom:1px solid var(--border);padding:0 14px;gap:0;flex-wrap:wrap;}
   .tab{padding:11px 14px;font-size:.82rem;font-weight:500;color:var(--text-ter);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;white-space:nowrap;}
   .tab:hover{color:var(--text-sec);}
   .tab.active{color:var(--text);border-bottom-color:var(--text);}
   .card-tabs-right{margin-left:auto;display:flex;align-items:center;gap:8px;padding:4px 0;}
   .search-box{padding:5px 11px;border:1px solid var(--border);border-radius:7px;font-size:.78rem;font-family:'DM Sans',sans-serif;outline:none;background:var(--bg);color:var(--text);width:160px;}
   .search-box:focus{border-color:var(--text);}
+  /* Suchfeld bricht in eigene Zeile wenn kein Platz */
+  @supports (container-type: inline-size){
+    .main-card{container-type:inline-size;}
+  }
+  @container (max-width: 420px){
+    .card-tabs-right{width:100%;padding:6px 8px 8px;border-top:1px solid var(--border);}
+    .search-box{width:100%;}
+  }
 
   /* TAB PANELS */
   .tab-panel{display:none;}
@@ -209,9 +217,6 @@
     .student-row .avatar{display:none;}
     .student-row.hdr > div:first-child{display:none;}
     .s-name{font-size:.8rem;}.s-last{font-size:.7rem;}.s-sessions{font-size:.75rem;}
-    .card-tabs-right{width:100%;padding:6px 0 4px;order:10;}
-    .search-box{width:100%;}
-    .topbar-right .btn-outline{display:none;}
     .ef-legend{font-size:.65rem;gap:10px;}
   }
 </style>
