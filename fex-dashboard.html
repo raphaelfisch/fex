@@ -70,6 +70,12 @@
   .stat-lbl{font-size:.67rem;color:var(--text-ter);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;white-space:nowrap;}
   .lbl-short{display:none;}
   .lbl-long{display:inline;}
+  /* Abkürzungen ab 900px */
+  @media(max-width:900px){
+    .lbl-short{display:inline;}.lbl-long{display:none;}
+    .stat-icon{display:none;}
+    .stat-item{padding:11px 10px;gap:6px;}
+  }
   .badge{display:inline-block;padding:1px 6px;border-radius:10px;font-size:.62rem;font-weight:500;margin-left:4px;vertical-align:middle;}
   .badge-red{background:var(--red-light);color:var(--red);}
   .badge-green{background:var(--green-light);color:var(--green);}
@@ -188,27 +194,20 @@
   /* RESPONSIVE */
   .hide-mobile{display:block;}
   .s-last-inline{display:none;}
-  @media(max-width:640px){.s-last-col{display:none;}.s-last-inline{display:block;font-size:.65rem;margin-top:1px;}}
   @media(max-width:640px){
     .sidebar{transform:translateX(-100%);}.sidebar.open{transform:translateX(0);}.main{margin-left:0;}
     .hamburger{display:flex;}.topbar{padding:10px 14px;}.date-label{display:none;}
     .content{padding:12px;gap:10px;}
-    .stat-bar{grid-template-columns:repeat(2,1fr);}
-    .stat-item{border-radius:0!important;}
-    .stat-item:first-child{border-radius:11px 0 0 0!important;}
-    .stat-item:nth-child(2){border-radius:0 11px 0 0!important;}
-    .stat-item:nth-child(3){border-radius:0 0 0 11px!important;}
-    .stat-item:last-child{border-radius:0 0 11px 0!important;}
+    .stat-bar{grid-template-columns:repeat(4,1fr);}
+    .stat-item{padding:10px 8px;gap:4px;flex-direction:column;align-items:flex-start;border-radius:0!important;}
+    .stat-item:first-child{border-radius:11px 0 0 11px!important;}
+    .stat-item:last-child{border-radius:0 11px 11px 0!important;}
     .bottom-row{grid-template-columns:1fr;}
     .progress-grid{grid-template-columns:1fr;}
-    .lbl-short{display:inline;}.lbl-long{display:none;}.stat-icon{display:none;}
-    .stat-item{padding:10px 8px;gap:6px;justify-content:center;flex-direction:column;align-items:flex-start;}
-    .stat-bar{grid-template-columns:repeat(4,1fr);}
     .hide-mobile{display:none!important;}
     .student-row{grid-template-columns:1fr 46px 80px 28px;}
     .student-row .avatar{display:none;}
     .student-row.hdr > div:first-child{display:none;}
-    .s-last-inline{display:none!important;}
     .s-name{font-size:.8rem;}.s-last{font-size:.7rem;}.s-sessions{font-size:.75rem;}
     .card-tabs-right{width:100%;padding:6px 0 4px;order:10;}
     .search-box{width:100%;}
