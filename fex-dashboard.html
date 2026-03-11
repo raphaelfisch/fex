@@ -657,17 +657,17 @@ function toggleMenu(e,id){
   e.stopPropagation();
   if(openMenu&&openMenu!==id){document.getElementById(openMenu)?.classList.remove('open');}
   const menu=document.getElementById(id);
-  if(menu){
-    menu.classList.toggle('open');
-    openMenu=menu.classList.contains('open')?id:null;
-    if(openMenu){
-      const container=menu.parentElement;
-      const rect=container.getBoundingClientRect();
-      const spaceBelow=window.innerHeight-rect.bottom;
-      menu.style.top='auto';
-      menu.style.bottom='auto';
-      if(spaceBelow<100){menu.style.bottom='100%';}
-      else{menu.style.top='100%';}
+  if(!menu)return;
+  menu.classList.toggle('open');
+  openMenu=menu.classList.contains('open')?id:null;
+  if(openMenu){
+    const rect=menu.parentElement.getBoundingClientRect();
+    menu.style.top='auto';
+    menu.style.bottom='auto';
+    if(rect.top>window.innerHeight/2){
+      menu.style.bottom='100%';
+    } else {
+      menu.style.top='100%';
     }
   }
 }
