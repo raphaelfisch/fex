@@ -661,7 +661,7 @@ function toggleMenu(e,id){
     menu.classList.toggle('open');
     openMenu=menu.classList.contains('open')?id:null;
     if(openMenu){
-      const btn=e.currentTarget;
+      const btn=e.target.closest('button')||e.target;
       const btnRect=btn.getBoundingClientRect();
       const spaceBelow=window.innerHeight-btnRect.bottom;
       if(spaceBelow<100){menu.style.top='auto';menu.style.bottom='28px';}
