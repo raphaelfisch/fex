@@ -122,7 +122,7 @@
   .dot-menu{width:24px;height:24px;border:none;background:none;cursor:pointer;border-radius:5px;font-size:.95rem;color:var(--text-ter);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s;line-height:1;}
   .student-row:hover .dot-menu{opacity:1;}
   .dot-menu:hover{background:var(--bg);color:var(--text-sec);}
-  .dropdown{display:none;position:absolute;right:0;top:28px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:200;min-width:160px;overflow:hidden;}
+  .dropdown{display:none;position:absolute;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:200;min-width:160px;overflow:hidden;}
   .dropdown.open{display:block;}
   .dropdown-item{padding:9px 14px;font-size:.8rem;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--text-sec);}
   .dropdown-item:hover{background:var(--bg);color:var(--text);}
@@ -661,11 +661,13 @@ function toggleMenu(e,id){
     menu.classList.toggle('open');
     openMenu=menu.classList.contains('open')?id:null;
     if(openMenu){
-      const btn=e.target.closest('button')||e.target;
-      const btnRect=btn.getBoundingClientRect();
-      const spaceBelow=window.innerHeight-btnRect.bottom;
-      if(spaceBelow<100){menu.style.top='auto';menu.style.bottom='28px';}
-      else{menu.style.top='28px';menu.style.bottom='auto';}
+      const container=menu.parentElement;
+      const rect=container.getBoundingClientRect();
+      const spaceBelow=window.innerHeight-rect.bottom;
+      menu.style.top='auto';
+      menu.style.bottom='auto';
+      if(spaceBelow<100){menu.style.bottom='100%';}
+      else{menu.style.top='100%';}
     }
   }
 }
