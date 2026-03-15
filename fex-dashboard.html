@@ -500,6 +500,10 @@ window.addEventListener('DOMContentLoaded',async()=>{
   if(profErr||!prof||!['teacher','admin'].includes(prof.role)){await db.auth.signOut();window.location.href='login.html';return;}
   document.getElementById('dateLabel').textContent=new Date().toLocaleDateString('de-CH',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   await loadDashboard();
+  // Hash-Routing: nach dem Laden die gespeicherte Seite wiederherstellen
+  if(window.location.hash==='#admin'&&isAdmin){
+    showAdminView();
+  }
 });
 
 async function loadDashboard(){
@@ -969,16 +973,15 @@ async function checkAdmin(prof){
 }
 
 function showAdminView(){
+  window.location.hash='admin';
   document.getElementById('mainContent').style.display='none';
   document.getElementById('noClassHint').style.display='none';
   document.getElementById('adminView').style.display='flex';
   document.getElementById('pageTitle').textContent='Administration';
   document.getElementById('topbarImport').style.display='none';
-  // Alle Admin-Daten laden
   loadAdminTeachers();
   loadAdminStudents();
   loadAdminInactive();
-  // Nav-Item aktiv markieren
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
   document.getElementById('adminNavItem').classList.add('active');
   closeSidebar();
@@ -1080,9 +1083,25 @@ async function toggleAdminRole(userId,userName,isAdmin){
     {label:'Bestätigen',style:'primary',fn:'closePopup();applyAdminRole(window._pendingAdminUserId,window._pendingAdminNewRole)'}
   ]});
 }
+function showEditAdminStudent(id,name){
+  closeMenu();
+  showPopup({title:'Schüler/in bearbeiten',msg:'',input:true,inputPlaceholder:'Name',inputValue:name,actions:[
+    {label:'Abbrechen',style:'secondary',fn:'closePopup()'},
+    {label:'Speichern',style:'primary',fn:`saveEditAdminStudent('${id}')`}
+  ]});
+}
+async function saveEditAdminStudent(id){
+  const name=document.getElementById('popupInput').value.trim();
+  if(!name)return;
+  closePopup();
+  const{error}=await db.from('profiles').update({name}).eq('id',id);
+  if(error){alertPopup('Fehler: '+error.message,'Fehler');return;}
+  loadAdminStudents();
+}
+
 async function applyAdminRole(userId,newRole){
   const{error}=await db.from('profiles').update({role:newRole}).eq('id',userId);
-  if(error){alertPopup('Fehler: '+error.message,'Fehler');return;}
+  if(error){alertPopup('Fehler: '+error.message+'\n\nHinweis: Führe zuerst diese SQL-Policy in Supabase aus:\nCREATE POLICY "admin_can_update_profiles" ON profiles FOR UPDATE USING (EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = \'admin\'));','Fehler');return;}
   loadAdminTeachers();
 }
 
@@ -1140,6 +1159,7 @@ async function loadAdminStudents(sortCol,sortDir){
         <div class="row-actions">
           <button class="dot-menu" onclick="toggleMenu(event,'smenu-${safeId}')">···</button>
           <div class="dropdown" id="smenu-${safeId}">
+            <div class="dropdown-item" onclick="showEditAdminStudent('${safeId}','${safeName}')">✏ Bearbeiten</div>
             <div class="dropdown-item danger" onclick="confirmDeleteAccount('${safeId}','${safeName}','student')">✕ Account löschen</div>
           </div>
         </div>
