@@ -477,9 +477,19 @@ async function loadClass(classId){
   const cl=currentClasses.find(c=>c.id===classId);
   if(cl)document.getElementById('pageTitle').textContent='Klasse '+cl.name;
   const today=new Date().toISOString().split('T')[0];
-  const{data:students}=await db.from('profiles').select('id,name').eq('class_id',classId).eq('role','student').order('name');
+
+  // Schüler über class_members laden
+  const{data:members}=await db.from('class_members').select('user_id').eq('class_id',classId);
+  const memberIds=(members||[]).map(m=>m.user_id);
+  if(!memberIds.length){
+    allStudents=[];
+    const pill=document.getElementById('pill-'+classId);
+    if(pill)pill.textContent=0;
+    showNoStudentsState();return;
+  }
+  const{data:students}=await db.from('profiles').select('id,name').in('id',memberIds).order('name');
   allStudents=students||[];
-  // Schüleranzahl in Pill aktualisieren
+
   const pill=document.getElementById('pill-'+classId);
   if(pill)pill.textContent=allStudents.length;
   if(!allStudents.length){showNoStudentsState();return;}
@@ -552,7 +562,7 @@ function renderStudentList(students,todayIds,sessCount,lastMap){
         <button class="dot-menu" onclick="toggleMenu(event,'menu-${safeId}')">···</button>
         <div class="dropdown" id="menu-${safeId}">
           <div class="dropdown-item" onclick="showEditStudent('${safeId}','${safeName}')">✏ Bearbeiten</div>
-          <div class="dropdown-item danger" onclick="confirmDeleteStudent('${safeId}','${safeName}')">✕ Löschen</div>
+          <div class="dropdown-item danger" onclick="confirmRemoveFromClass('${safeId}','${safeName}')">✕ Aus Klasse entfernen</div>
         </div>
       </div>
     </div>`;
@@ -697,22 +707,21 @@ async function saveEditStudent(id){
   await loadClass(currentClassId);
 }
 
-// ── SCHÜLER LÖSCHEN ───────────────────────────────────────────
-function confirmDeleteStudent(studentId,studentName){
+// ── SCHÜLER AUS KLASSE ENTFERNEN ─────────────────────────────
+function confirmRemoveFromClass(studentId,studentName){
   closeMenu();
-  window._pendingDeleteStudentId=studentId;
-  showPopup({title:'Schüler/in löschen',msg:`<strong>${studentName}</strong> wirklich löschen?\n\nDabei werden unwiderruflich gelöscht:\n• Der Account\n• Alle Sessions\n• Alle Reflexionen`,actions:[
+  window._pendingRemoveStudentId=studentId;
+  showPopup({title:'Aus Klasse entfernen',msg:`<strong>${studentName}</strong> aus dieser Klasse entfernen?\n\nDer Account und alle Spieldaten bleiben erhalten. Du kannst den Schüler jederzeit wieder hinzufügen.`,actions:[
     {label:'Abbrechen',style:'secondary',fn:'closePopup()'},
-    {label:'Löschen',style:'danger',fn:'closePopup();deleteStudent(window._pendingDeleteStudentId)'}
+    {label:'Entfernen',style:'danger',fn:'closePopup();removeFromClass(window._pendingRemoveStudentId)'}
   ]});
 }
-async function deleteStudent(studentId){
+async function removeFromClass(studentId){
   try{
-    const{data:{session}}=await db.auth.getSession();
-    const resp=await fetch(`${SUPABASE_URL}/functions/v1/delete-user`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.access_token}`},body:JSON.stringify({userIds:[studentId]})});
-    if(!resp.ok)throw new Error(await resp.text());
+    const{error}=await db.from('class_members').delete().eq('class_id',currentClassId).eq('user_id',studentId);
+    if(error)throw new Error(error.message);
     await loadClass(currentClassId);
-  }catch(e){alertPopup('Fehler beim Löschen: '+e.message,'Fehler');}
+  }catch(e){alertPopup('Fehler: '+e.message,'Fehler');}
 }
 function closeMenu(){if(openMenu){document.getElementById(openMenu)?.classList.remove('open');openMenu=null;}}
 
@@ -734,9 +743,11 @@ async function createClass(name){
   currentClasses.push(data);currentClassId=data.id;renderClassPills();await loadClass(data.id);
 }
 async function confirmDeleteClass(classId,className){
-  const{count}=await db.from('profiles').select('*',{count:'exact',head:true}).eq('class_id',classId).eq('role','student');
+  const{count}=await db.from('class_members').select('*',{count:'exact',head:true}).eq('class_id',classId);
   const n=count||0;
-  const msg=n>0?`<strong>Achtung – diese Aktion kann nicht rückgängig gemacht werden!</strong>\n\nKlasse „${className}" löschen?\n\nDabei werden unwiderruflich gelöscht:\n• ${n} Schüler/in${n!==1?'nen':''}\n• Alle Sessions\n• Alle Reflexionen`:`Klasse „${className}" löschen?\n\nDie Klasse ist leer und wird unwiderruflich gelöscht.`;
+  const msg=n>0
+    ?`Klasse „${className}" löschen?\n\n${n} Schüler/in${n!==1?'nen':''} ${n!==1?'werden':'wird'} aus der Klasse entfernt. Die Accounts und alle Spieldaten bleiben erhalten.`
+    :`Klasse „${className}" löschen?\n\nDie Klasse ist leer und wird unwiderruflich gelöscht.`;
   window._pendingDeleteClassId=classId;
   showPopup({title:'Klasse löschen',msg,actions:[
     {label:'Abbrechen',style:'secondary',fn:'closePopup()'},
@@ -745,13 +756,8 @@ async function confirmDeleteClass(classId,className){
 }
 async function deleteClass(classId){
   try{
-    const{data:students}=await db.from('profiles').select('id').eq('class_id',classId).eq('role','student');
-    const ids=(students||[]).map(s=>s.id);
-    if(ids.length>0){
-      const{data:{session}}=await db.auth.getSession();
-      const resp=await fetch(`${SUPABASE_URL}/functions/v1/delete-user`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.access_token}`},body:JSON.stringify({userIds:ids})});
-      if(!resp.ok)throw new Error(await resp.text());
-    }
+    // Nur class_members Einträge löschen (ON DELETE CASCADE macht das automatisch)
+    // Accounts bleiben immer erhalten
     const{error}=await db.from('classes').delete().eq('id',classId);
     if(error)throw new Error(error.message);
     currentClasses=currentClasses.filter(cl=>cl.id!==classId);
@@ -782,15 +788,34 @@ async function submitNewStudent(){
   if(!firstName){errorEl.textContent='Bitte Vornamen eingeben.';return;}
   if(!lastName){errorEl.textContent='Bitte Nachnamen eingeben.';return;}
   if(!email||!email.includes('@')){errorEl.textContent='Bitte gültige E-Mail eingeben.';return;}
-  if(password.length<6){errorEl.textContent='Passwort muss mind. 6 Zeichen haben.';return;}
   btn.disabled=true;btn.textContent='…';
+
+  // Prüfen ob Account mit dieser E-Mail bereits existiert
+  const{data:existing}=await db.from('profiles').select('id,name').eq('email',email).maybeSingle();
+  if(existing){
+    // Account existiert – prüfen ob bereits in dieser Klasse
+    const{data:alreadyMember}=await db.from('class_members').select('user_id').eq('class_id',currentClassId).eq('user_id',existing.id).maybeSingle();
+    if(alreadyMember){
+      errorEl.textContent=`${existing.name} ist bereits in dieser Klasse.`;
+      btn.disabled=false;btn.textContent='Hinzufügen';return;
+    }
+    // Nur class_members Eintrag erstellen
+    const{error:mErr}=await db.from('class_members').insert({class_id:currentClassId,user_id:existing.id});
+    if(mErr){errorEl.textContent='Fehler: '+mErr.message;btn.disabled=false;btn.textContent='Hinzufügen';return;}
+    closeStudentModal();await loadClass(currentClassId);return;
+  }
+
+  // Neuer Account
+  if(password.length<6){errorEl.textContent='Passwort muss mind. 6 Zeichen haben.';btn.disabled=false;btn.textContent='Hinzufügen';return;}
   const tmp=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
   const{data:authData,error:authError}=await tmp.auth.signUp({email,password,options:{data:{name,role:'student'}}});
   if(authError){errorEl.textContent='Fehler: '+authError.message;btn.disabled=false;btn.textContent='Hinzufügen';return;}
   if(!authData.user){errorEl.textContent='Account konnte nicht erstellt werden.';btn.disabled=false;btn.textContent='Hinzufügen';return;}
   await new Promise(r=>setTimeout(r,800));
-  const{error:pErr}=await db.from('profiles').insert({id:authData.user.id,name,role:'student',class_id:currentClassId});
+  const{error:pErr}=await db.from('profiles').insert({id:authData.user.id,name,role:'student',email});
   if(pErr){errorEl.textContent='Profil-Fehler: '+pErr.message;btn.disabled=false;btn.textContent='Hinzufügen';return;}
+  const{error:mErr}=await db.from('class_members').insert({class_id:currentClassId,user_id:authData.user.id});
+  if(mErr){errorEl.textContent='Klassen-Fehler: '+mErr.message;btn.disabled=false;btn.textContent='Hinzufügen';return;}
   closeStudentModal();await loadClass(currentClassId);
 }
 
@@ -837,13 +862,25 @@ async function submitImport(){
     document.getElementById('importProgressBar').style.width=`${Math.round((i/total)*100)}%`;
     try{
       const name=(s.firstName+' '+s.lastName).trim();
+      // Prüfen ob Account bereits existiert
+      const{data:existing}=await db.from('profiles').select('id,name').eq('email',s.email).maybeSingle();
+      if(existing){
+        const{data:alreadyMember}=await db.from('class_members').select('user_id').eq('class_id',currentClassId).eq('user_id',existing.id).maybeSingle();
+        if(alreadyMember){errors.push(`${name}: bereits in dieser Klasse`);failed++;continue;}
+        const{error:mErr}=await db.from('class_members').insert({class_id:currentClassId,user_id:existing.id});
+        if(mErr)throw new Error(mErr.message);
+        success++;continue;
+      }
+      // Neuer Account
       const tmp=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
       const{data:authData,error:authError}=await tmp.auth.signUp({email:s.email,password:pw,options:{data:{name,role:'student'}}});
       if(authError)throw new Error(authError.message);
       if(!authData.user)throw new Error('Kein User zurückgegeben');
       await new Promise(r=>setTimeout(r,500));
-      const{error:pErr}=await db.from('profiles').insert({id:authData.user.id,name,role:'student',class_id:currentClassId});
+      const{error:pErr}=await db.from('profiles').insert({id:authData.user.id,name,role:'student',email:s.email});
       if(pErr)throw new Error('Profil: '+pErr.message);
+      const{error:mErr}=await db.from('class_members').insert({class_id:currentClassId,user_id:authData.user.id});
+      if(mErr)throw new Error('Klasse: '+mErr.message);
       success++;
     }catch(e){failed++;errors.push(`${s.firstName} ${s.lastName}: ${e.message}`);}
   }
