@@ -82,7 +82,7 @@
   .badge-orange{background:var(--orange-light);color:var(--orange);}
 
   /* HAUPTKARTE MIT TABS */
-  .main-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+  .main-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:visible;}
   .card-tabs{display:flex;align-items:center;border-bottom:1px solid var(--border);padding:0 14px;gap:0;flex-wrap:wrap;}
   .tab{padding:11px 14px;font-size:.82rem;font-weight:500;color:var(--text-ter);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;white-space:nowrap;}
   .tab:hover{color:var(--text-sec);}
@@ -992,33 +992,49 @@ function switchAdminTab(name,el){
 }
 
 // Lehrpersonen laden
-async function loadAdminTeachers(){
+let adminTeacherSort={col:'name',dir:1};
+
+async function loadAdminTeachers(sortCol,sortDir){
+  if(sortCol!==undefined){adminTeacherSort.col=sortCol;adminTeacherSort.dir=sortDir;}
+  const col=adminTeacherSort.col,dir=adminTeacherSort.dir;
   const list=document.getElementById('adminTeacherList');
-  const{data:teachers}=await db.from('profiles').select('id,name,email,role').in('role',['teacher','admin']).order('name');
+  const{data:teachers}=await db.from('profiles').select('id,name,email,role').in('role',['teacher','admin']);
   if(!teachers?.length){list.innerHTML='<div class="empty-hint">Keine Lehrpersonen gefunden.</div>';return;}
-  // Klassen pro Lehrperson zählen
   const{data:classes}=await db.from('classes').select('id,teacher_id');
   const classCount={};
   (classes||[]).forEach(c=>{classCount[c.teacher_id]=(classCount[c.teacher_id]||0)+1;});
-  // Schüler pro Lehrperson zählen
   const studentCount={};
   for(const cl of (classes||[])){
     const{count}=await db.from('class_members').select('*',{count:'exact',head:true}).eq('class_id',cl.id);
     studentCount[cl.teacher_id]=(studentCount[cl.teacher_id]||0)+(count||0);
   }
+  // Sortieren
+  teachers.sort((a,b)=>{
+    let av,bv;
+    if(col==='name'){av=a.name||'';bv=b.name||'';}
+    else if(col==='klassen'){av=classCount[a.id]||0;bv=classCount[b.id]||0;}
+    else{av=studentCount[a.id]||0;bv=studentCount[b.id]||0;}
+    if(av<bv)return -dir;if(av>bv)return dir;return 0;
+  });
+  const arrow=c=>c===col?(dir===1?'↑':'↓'):'↕';
+  const aCls=c=>c===col?'sort-arrow active':'sort-arrow';
+
   list.innerHTML=`
     <div class="student-row hdr" style="grid-template-columns:1fr 80px 80px 60px;">
-      <div class="col-lbl">Name / E-Mail</div>
-      <div class="col-lbl" style="justify-content:center;">Klassen</div>
-      <div class="col-lbl" style="justify-content:center;">Schüler/innen</div>
+      <div class="col-lbl col-sortable" onclick="loadAdminTeachers('name',${col==='name'?-dir:1})">Name <span class="${aCls('name')}">${arrow('name')}</span></div>
+      <div class="col-lbl col-sortable" style="justify-content:center;" onclick="loadAdminTeachers('klassen',${col==='klassen'?-dir:1})">Klassen <span class="${aCls('klassen')}">${arrow('klassen')}</span></div>
+      <div class="col-lbl col-sortable" style="justify-content:center;" onclick="loadAdminTeachers('schueler',${col==='schueler'?-dir:1})">Schüler/innen <span class="${aCls('schueler')}">${arrow('schueler')}</span></div>
       <div></div>
     </div>`+
     teachers.map(t=>{
       const safeId=t.id.replace(/'/g,"\\'");
       const safeName=(t.name||'').replace(/'/g,"\\'");
+      const safeEmail=(t.email||'').replace(/'/g,"\\'");
+      const isAdminT=t.role==='admin';
+      const isSelf=t.id===currentUser.id;
       return `<div class="student-row" style="grid-template-columns:1fr 80px 80px 60px;">
-        <div>
-          <div class="s-name">${t.name||'–'} ${t.role==='admin'?'<span style="font-size:.6rem;background:#1a1a1a;color:#fff;padding:1px 6px;border-radius:8px;vertical-align:middle;">Admin</span>':''}</div>
+        <div style="display:flex;flex-direction:column;justify-content:center;">
+          <div class="s-name" style="padding-left:0;">${t.name||'–'} ${isAdminT?'<span style="font-size:.6rem;background:#1a1a1a;color:#fff;padding:1px 6px;border-radius:8px;vertical-align:middle;">Admin</span>':''}</div>
           <div class="s-meta">${t.email||'–'}</div>
         </div>
         <div class="s-sessions">${classCount[t.id]||0}</div>
@@ -1026,19 +1042,56 @@ async function loadAdminTeachers(){
         <div class="row-actions">
           <button class="dot-menu" onclick="toggleMenu(event,'tmenu-${safeId}')">···</button>
           <div class="dropdown" id="tmenu-${safeId}">
-            <div class="dropdown-item danger" onclick="confirmDeleteAccount('${safeId}','${safeName}','teacher')">✕ Account löschen</div>
+            <div class="dropdown-item" onclick="showEditTeacher('${safeId}','${safeName}','${safeEmail}')">✏ Bearbeiten</div>
+            ${!isSelf?`<div class="dropdown-item" onclick="toggleAdminRole('${safeId}','${safeName}',${isAdminT})">${isAdminT?'↓ Admin entfernen':'↑ Zum Admin machen'}</div>`:''}
+            ${!isSelf?`<div class="dropdown-item danger" onclick="confirmDeleteAccount('${safeId}','${safeName}','teacher')">✕ Account löschen</div>`:''}
+            ${isSelf?`<div class="dropdown-item" style="color:var(--text-ter);cursor:default;font-size:.75rem;">Eigener Account</div>`:''}
           </div>
         </div>
       </div>`;
     }).join('');
 }
+let adminInactiveSort={col:'name',dir:1};
 
-// Alle Schüler laden
-async function loadAdminStudents(){
+function showEditTeacher(id,name,email){
+  closeMenu();
+  showPopup({title:'Lehrperson bearbeiten',msg:'',input:true,inputPlaceholder:'Name',inputValue:name,actions:[
+    {label:'Abbrechen',style:'secondary',fn:'closePopup()'},
+    {label:'Speichern',style:'primary',fn:`saveEditTeacher('${id}')`}
+  ]});
+}
+async function saveEditTeacher(id){
+  const name=document.getElementById('popupInput').value.trim();
+  if(!name)return;
+  closePopup();
+  const{error}=await db.from('profiles').update({name}).eq('id',id);
+  if(error){alertPopup('Fehler: '+error.message,'Fehler');return;}
+  loadAdminTeachers();
+}
+
+async function toggleAdminRole(userId,userName,isAdmin){
+  closeMenu();
+  const newRole=isAdmin?'teacher':'admin';
+  const msg=isAdmin?`${userName} Admin-Rechte entziehen?`:`${userName} zum Admin machen?`;
+  window._pendingAdminUserId=userId;
+  window._pendingAdminNewRole=newRole;
+  showPopup({title:'Rolle ändern',msg,actions:[
+    {label:'Abbrechen',style:'secondary',fn:'closePopup()'},
+    {label:'Bestätigen',style:'primary',fn:'closePopup();applyAdminRole(window._pendingAdminUserId,window._pendingAdminNewRole)'}
+  ]});
+}
+async function applyAdminRole(userId,newRole){
+  const{error}=await db.from('profiles').update({role:newRole}).eq('id',userId);
+  if(error){alertPopup('Fehler: '+error.message,'Fehler');return;}
+  loadAdminTeachers();
+}
+
+// Alle Schüler laden mit Sortierung
+async function loadAdminStudents(sortCol,sortDir){
+  if(sortCol!==undefined){adminStudentSort.col=sortCol;adminStudentSort.dir=sortDir;}
   const list=document.getElementById('adminStudentList');
-  const{data:students}=await db.from('profiles').select('id,name,email').eq('role','student').order('name');
+  const{data:students}=await db.from('profiles').select('id,name,email').eq('role','student');
   if(!students?.length){list.innerHTML='<div class="empty-hint">Keine Schüler/innen gefunden.</div>';return;}
-  // Klassen pro Schüler
   const{data:allMembers}=await db.from('class_members').select('user_id,class_id');
   const{data:allClasses}=await db.from('classes').select('id,name');
   const classMap=Object.fromEntries((allClasses||[]).map(c=>[c.id,c.name]));
@@ -1047,16 +1100,28 @@ async function loadAdminStudents(){
     if(!memberMap[m.user_id])memberMap[m.user_id]=[];
     memberMap[m.user_id].push(classMap[m.class_id]||'?');
   });
-  // Letzter Login
   const{data:lastSessions}=await db.from('sessions').select('user_id,played_at').order('played_at',{ascending:false});
   const lastMap={};
   (lastSessions||[]).forEach(s=>{if(!lastMap[s.user_id])lastMap[s.user_id]=s.played_at;});
 
+  // Sortieren
+  const col=adminStudentSort.col,dir=adminStudentSort.dir;
+  students.sort((a,b)=>{
+    let av,bv;
+    if(col==='name'){av=a.name||'';bv=b.name||'';}
+    else if(col==='klassen'){av=(memberMap[a.id]||[]).length;bv=(memberMap[b.id]||[]).length;}
+    else{av=lastMap[a.id]?new Date(lastMap[a.id]).getTime():0;bv=lastMap[b.id]?new Date(lastMap[b.id]).getTime():0;}
+    if(av<bv)return -dir;if(av>bv)return dir;return 0;
+  });
+
+  const arrow=c=>c===col?(dir===1?'↑':'↓'):'↕';
+  const aCls=c=>c===col?'sort-arrow active':'sort-arrow';
+
   list.innerHTML=`
     <div class="student-row hdr" style="grid-template-columns:1fr 1fr 100px 32px;">
-      <div class="col-lbl">Name / E-Mail</div>
-      <div class="col-lbl">Klassen</div>
-      <div class="col-lbl" style="justify-content:center;">Zuletzt aktiv</div>
+      <div class="col-lbl col-sortable" onclick="loadAdminStudents('name',${col==='name'?-dir:1})">Name <span class="${aCls('name')}">${arrow('name')}</span></div>
+      <div class="col-lbl col-sortable" onclick="loadAdminStudents('klassen',${col==='klassen'?-dir:1})">Klassen <span class="${aCls('klassen')}">${arrow('klassen')}</span></div>
+      <div class="col-lbl col-sortable" style="justify-content:center;" onclick="loadAdminStudents('last',${col==='last'?-dir:1})">Zuletzt aktiv <span class="${aCls('last')}">${arrow('last')}</span></div>
       <div></div>
     </div>`+
     students.map(s=>{
@@ -1065,11 +1130,11 @@ async function loadAdminStudents(){
       const safeName=(s.name||'').replace(/'/g,"\\'");
       const days=lastMap[s.id]?(Date.now()-new Date(lastMap[s.id]))/86400000:999;
       return `<div class="student-row" style="grid-template-columns:1fr 1fr 100px 32px;">
-        <div>
-          <div class="s-name">${s.name||'–'}</div>
+        <div style="display:flex;flex-direction:column;justify-content:center;">
+          <div class="s-name" style="padding-left:0;">${s.name||'–'}</div>
           <div class="s-meta">${s.email||'–'}</div>
         </div>
-        <div style="font-size:.75rem;color:var(--text-sec);">${klassen.length?klassen.join(', '):'<span style="color:var(--text-ter);">Keine Klasse</span>'}</div>
+        <div style="font-size:.75rem;color:var(--text-sec);display:flex;align-items:center;">${klassen.length?klassen.join(', '):'<span style="color:var(--text-ter);">Keine Klasse</span>'}</div>
         <div class="s-last ${days>=30?'warn':days===999?'never':''}" style="text-align:center;">${lastMap[s.id]?formatRelativeDate(lastMap[s.id]):'Noch nie'}</div>
         <div class="row-actions">
           <button class="dot-menu" onclick="toggleMenu(event,'smenu-${safeId}')">···</button>
@@ -1081,17 +1146,18 @@ async function loadAdminStudents(){
     }).join('');
 }
 
-// Inaktive Accounts laden
-async function loadAdminInactive(){
+// Inaktive Accounts laden mit Sortierung
+async function loadAdminInactive(sortCol,sortDir){
+  if(sortCol!==undefined){adminInactiveSort.col=sortCol;adminInactiveSort.dir=sortDir;}
   const list=document.getElementById('adminInactiveList');
-  const{data:students}=await db.from('profiles').select('id,name,email').eq('role','student').order('name');
+  const{data:students}=await db.from('profiles').select('id,name,email').eq('role','student');
   const{data:allMembers}=await db.from('class_members').select('user_id');
   const memberSet=new Set((allMembers||[]).map(m=>m.user_id));
   const{data:lastSessions}=await db.from('sessions').select('user_id,played_at').order('played_at',{ascending:false});
   const lastMap={};
   (lastSessions||[]).forEach(s=>{if(!lastMap[s.user_id])lastMap[s.user_id]=s.played_at;});
 
-  const inactive=(students||[]).filter(s=>{
+  let inactive=(students||[]).filter(s=>{
     const noClass=!memberSet.has(s.id);
     const days=lastMap[s.id]?(Date.now()-new Date(lastMap[s.id]))/86400000:999;
     return noClass||days>=30;
@@ -1099,11 +1165,23 @@ async function loadAdminInactive(){
 
   if(!inactive.length){list.innerHTML='<div class="empty-hint">Keine inaktiven Accounts gefunden.</div>';return;}
 
+  // Sortieren
+  const col=adminInactiveSort.col,dir=adminInactiveSort.dir;
+  inactive.sort((a,b)=>{
+    let av,bv;
+    if(col==='name'){av=a.name||'';bv=b.name||'';}
+    else{av=lastMap[a.id]?new Date(lastMap[a.id]).getTime():0;bv=lastMap[b.id]?new Date(lastMap[b.id]).getTime():0;}
+    if(av<bv)return -dir;if(av>bv)return dir;return 0;
+  });
+
+  const arrow=c=>c===col?(dir===1?'↑':'↓'):'↕';
+  const aCls=c=>c===col?'sort-arrow active':'sort-arrow';
+
   list.innerHTML=`
     <div class="student-row hdr" style="grid-template-columns:1fr 120px 120px 32px;">
-      <div class="col-lbl">Name / E-Mail</div>
+      <div class="col-lbl col-sortable" onclick="loadAdminInactive('name',${col==='name'?-dir:1})">Name <span class="${aCls('name')}">${arrow('name')}</span></div>
       <div class="col-lbl">Status</div>
-      <div class="col-lbl" style="justify-content:center;">Zuletzt aktiv</div>
+      <div class="col-lbl col-sortable" style="justify-content:center;" onclick="loadAdminInactive('last',${col==='last'?-dir:1})">Zuletzt aktiv <span class="${aCls('last')}">${arrow('last')}</span></div>
       <div></div>
     </div>`+
     inactive.map(s=>{
@@ -1115,11 +1193,11 @@ async function loadAdminInactive(){
       if(noClass)tags.push('<span style="background:var(--red-light);color:var(--red);font-size:.62rem;padding:1px 6px;border-radius:8px;">Keine Klasse</span>');
       if(days>=30)tags.push('<span style="background:var(--orange-light);color:var(--orange);font-size:.62rem;padding:1px 6px;border-radius:8px;">30+ Tage inaktiv</span>');
       return `<div class="student-row" style="grid-template-columns:1fr 120px 120px 32px;">
-        <div>
-          <div class="s-name">${s.name||'–'}</div>
+        <div style="display:flex;flex-direction:column;justify-content:center;">
+          <div class="s-name" style="padding-left:0;">${s.name||'–'}</div>
           <div class="s-meta">${s.email||'–'}</div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:3px;">${tags.join('')}</div>
+        <div style="display:flex;flex-direction:column;gap:3px;justify-content:center;">${tags.join('')}</div>
         <div class="s-last never" style="text-align:center;">${lastMap[s.id]?formatRelativeDate(lastMap[s.id]):'Noch nie'}</div>
         <div class="row-actions">
           <button class="dot-menu" onclick="toggleMenu(event,'imenu-${safeId}')">···</button>
