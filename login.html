@@ -213,11 +213,11 @@
             console.log('User ID:', user.id);
             console.log('Profile:', profile);
             console.log('Error:', error);
-            if (profile?.role === 'teacher') {
-                window.location.href = 'fex-dashboard.html';
-            } else {
-                window.location.href = 'fex-schueler.html';
-            }
+            if (profile?.role === 'teacher' || profile?.role === 'admin') {
+    window.location.href = 'fex-dashboard.html';
+} else {
+    window.location.href = 'fex-schueler.html';
+}
         }
 
         async function handleLogin() {
