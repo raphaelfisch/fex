@@ -12,7 +12,7 @@
   body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;}
 
   /* SIDEBAR */
-  .sidebar{width:var(--sidebar-w);background:var(--text);color:#fff;display:flex;flex-direction:column;padding:24px 0;position:fixed;left:0;top:0;height:100vh;z-index:100;transition:transform .25s ease;}
+  .sidebar{width:var(--sidebar-w);background:var(--text);color:#fff;display:flex;flex-direction:column;padding:24px 0;position:fixed;left:0;top:0;height:100vh;height:100dvh;z-index:100;transition:transform .25s ease;overflow-y:auto;}
   .logo{padding:0 20px 20px;border-bottom:1px solid rgba(255,255,255,.1);}
   .logo-main{font-size:1.3rem;font-weight:600;letter-spacing:-.02em;}
   .logo-sub{font-size:.6rem;color:rgba(255,255,255,.35);letter-spacing:.1em;text-transform:uppercase;margin-top:2px;}
@@ -28,7 +28,7 @@
   .nav-delete:hover{opacity:1!important;background:rgba(255,0,0,.2);}
   .nav-add{padding:7px 10px;font-size:.78rem;color:rgba(255,255,255,.28);cursor:pointer;display:flex;align-items:center;gap:8px;}
   .nav-add:hover{color:rgba(255,255,255,.55);}
-  .sidebar-bottom{padding:14px 10px;border-top:1px solid rgba(255,255,255,.1);}
+  .sidebar-bottom{padding:14px 10px;border-top:1px solid rgba(255,255,255,.1);flex-shrink:0;}
   .teacher-tag{padding:9px 10px;background:rgba(255,255,255,.07);border-radius:7px;font-size:.75rem;color:rgba(255,255,255,.6);margin-bottom:6px;}
   .teacher-name{font-weight:500;color:#fff;font-size:.82rem;}
   .btn-logout{width:100%;padding:8px 10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:7px;color:rgba(255,255,255,.6);font-size:.78rem;cursor:pointer;font-family:'DM Sans',sans-serif;text-align:left;}
@@ -234,11 +234,15 @@
     <div class="nav-section">Klassen</div>
     <div id="classPills"></div>
     <div class="nav-add" onclick="showNewClassModal()">+ Neue Klasse</div>
+    <div class="nav-section" id="adminSection" style="display:none;">Administration</div>
+    <div class="nav-item" id="adminNavItem" style="display:none;" onclick="showAdminView()">
+      <div class="nav-item-left">⚙ Admin</div>
+    </div>
   </div>
   <div class="sidebar-bottom">
     <div class="teacher-tag">
       <div class="teacher-name" id="teacherName">–</div>
-      <div>Lehrperson</div>
+      <div id="teacherRoleLabel">Lehrperson</div>
     </div>
     <button class="btn-logout" onclick="doLogout()">Abmelden</button>
   </div>
@@ -353,6 +357,41 @@
 
   <div class="empty-hint" id="noClassHint" style="display:none;padding:60px 20px;">Noch keine Klasse vorhanden. Klicke auf „+ Neue Klasse".</div>
 
+  <!-- ADMIN VIEW -->
+  <div id="adminView" style="display:none;" class="content">
+
+    <!-- ADMIN TABS -->
+    <div class="main-card">
+      <div class="card-tabs">
+        <div class="tab active" id="atab-btn-lehrpersonen" onclick="switchAdminTab('lehrpersonen',this)">Lehrpersonen</div>
+        <div class="tab" id="atab-btn-schueler" onclick="switchAdminTab('schueler',this)">Schüler/innen</div>
+        <div class="tab" id="atab-btn-inaktiv" onclick="switchAdminTab('inaktiv',this)">Inaktive Accounts</div>
+      </div>
+
+      <!-- LEHRPERSONEN -->
+      <div class="tab-panel active" id="atab-lehrpersonen">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:flex-end;">
+          <button class="btn-small" onclick="showNewTeacherModal()">+ Neue Lehrperson</button>
+        </div>
+        <div id="adminTeacherList"><div class="empty-hint">Lade…</div></div>
+      </div>
+
+      <!-- SCHÜLER -->
+      <div class="tab-panel" id="atab-schueler">
+        <div id="adminStudentList"><div class="empty-hint">Lade…</div></div>
+      </div>
+
+      <!-- INAKTIVE -->
+      <div class="tab-panel" id="atab-inaktiv">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border);font-size:.78rem;color:var(--text-sec);">
+          Accounts ohne Login seit 30+ Tagen oder in keiner Klasse.
+        </div>
+        <div id="adminInactiveList"><div class="empty-hint">Lade…</div></div>
+      </div>
+
+    </div>
+  </div>
+
 </main>
 
 <!-- POPUP -->
@@ -362,6 +401,24 @@
     <div class="popup-msg" id="popupMsg"></div>
     <input class="popup-input" id="popupInput" type="text" style="display:none">
     <div class="popup-actions" id="popupActions"></div>
+  </div>
+</div>
+
+<!-- LEHRPERSON MODAL -->
+<div id="teacherModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:16px;padding:28px 24px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.15);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;">
+      <div style="font-size:1rem;font-weight:600;">Neue Lehrperson</div>
+      <button onclick="closeTeacherModal()" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#999;">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div><label style="display:block;font-size:.72rem;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Vorname</label><input id="teacherFirstName" type="text" placeholder="z.B. Anna" autocomplete="off" style="width:100%;padding:11px 14px;border:1.5px solid #ddd;border-radius:10px;font-size:.95rem;font-family:'DM Sans',sans-serif;outline:none;" onfocus="this.style.borderColor='#1a1a1a'" onblur="this.style.borderColor='#ddd'"></div>
+      <div><label style="display:block;font-size:.72rem;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Nachname</label><input id="teacherLastName" type="text" placeholder="z.B. Meier" autocomplete="off" style="width:100%;padding:11px 14px;border:1.5px solid #ddd;border-radius:10px;font-size:.95rem;font-family:'DM Sans',sans-serif;outline:none;" onfocus="this.style.borderColor='#1a1a1a'" onblur="this.style.borderColor='#ddd'"></div>
+      <div><label style="display:block;font-size:.72rem;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">E-Mail</label><input id="teacherEmail" type="email" placeholder="anna@schule.ch" autocomplete="off" style="width:100%;padding:11px 14px;border:1.5px solid #ddd;border-radius:10px;font-size:.95rem;font-family:'DM Sans',sans-serif;outline:none;" onfocus="this.style.borderColor='#1a1a1a'" onblur="this.style.borderColor='#ddd'"></div>
+      <div><label style="display:block;font-size:.72rem;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Passwort</label><input id="teacherPassword" type="password" placeholder="Mind. 6 Zeichen" autocomplete="new-password" style="width:100%;padding:11px 14px;border:1.5px solid #ddd;border-radius:10px;font-size:.95rem;font-family:'DM Sans',sans-serif;outline:none;" onfocus="this.style.borderColor='#1a1a1a'" onblur="this.style.borderColor='#ddd'" onkeydown="if(event.key==='Enter')submitNewTeacher()"></div>
+      <div id="teacherError" style="color:#b03030;font-size:.83rem;min-height:1.1em;"></div>
+      <button id="teacherSubmitBtn" onclick="submitNewTeacher()" style="padding:13px;background:#1a1a1a;color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">Erstellen</button>
+    </div>
   </div>
 </div>
 
@@ -446,8 +503,9 @@ window.addEventListener('DOMContentLoaded',async()=>{
 });
 
 async function loadDashboard(){
-  const{data:profile}=await db.from('profiles').select('name').eq('id',currentUser.id).single();
+  const{data:profile}=await db.from('profiles').select('name,role').eq('id',currentUser.id).single();
   document.getElementById('teacherName').textContent=profile?.name||currentUser.email;
+  await checkAdmin(profile);
   const{data:classes}=await db.from('classes').select('*').eq('teacher_id',currentUser.id).order('name');
   currentClasses=classes||[];
   renderClassPills();
@@ -468,7 +526,14 @@ function renderClassPills(){
     </div>`).join('');
 }
 
-async function switchClass(id){currentClassId=id;renderClassPills();await loadClass(id);closeSidebar();}
+async function switchClass(id){
+  currentClassId=id;
+  document.getElementById('adminView').style.display='none';
+  document.getElementById('adminNavItem').classList.remove('active');
+  renderClassPills();
+  await loadClass(id);
+  closeSidebar();
+}
 
 async function loadClass(classId){
   document.getElementById('mainContent').style.display='flex';
@@ -891,7 +956,236 @@ async function submitImport(){
   document.getElementById('importResult').innerHTML=html;
 }
 
-// ── HILFSFUNKTIONEN ───────────────────────────────────────────
+// ── ADMIN ─────────────────────────────────────────────────────
+let isAdmin=false;
+
+async function checkAdmin(prof){
+  isAdmin=prof?.role==='admin';
+  if(isAdmin){
+    document.getElementById('adminSection').style.display='block';
+    document.getElementById('adminNavItem').style.display='flex';
+    document.getElementById('teacherRoleLabel').textContent='Admin';
+  }
+}
+
+function showAdminView(){
+  document.getElementById('mainContent').style.display='none';
+  document.getElementById('noClassHint').style.display='none';
+  document.getElementById('adminView').style.display='flex';
+  document.getElementById('pageTitle').textContent='Administration';
+  document.getElementById('topbarImport').style.display='none';
+  // Alle Admin-Daten laden
+  loadAdminTeachers();
+  loadAdminStudents();
+  loadAdminInactive();
+  // Nav-Item aktiv markieren
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  document.getElementById('adminNavItem').classList.add('active');
+  closeSidebar();
+}
+
+function switchAdminTab(name,el){
+  document.querySelectorAll('#adminView .tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('#adminView .tab-panel').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('atab-'+name).classList.add('active');
+}
+
+// Lehrpersonen laden
+async function loadAdminTeachers(){
+  const list=document.getElementById('adminTeacherList');
+  const{data:teachers}=await db.from('profiles').select('id,name,email,role').in('role',['teacher','admin']).order('name');
+  if(!teachers?.length){list.innerHTML='<div class="empty-hint">Keine Lehrpersonen gefunden.</div>';return;}
+  // Klassen pro Lehrperson zählen
+  const{data:classes}=await db.from('classes').select('id,teacher_id');
+  const classCount={};
+  (classes||[]).forEach(c=>{classCount[c.teacher_id]=(classCount[c.teacher_id]||0)+1;});
+  // Schüler pro Lehrperson zählen
+  const studentCount={};
+  for(const cl of (classes||[])){
+    const{count}=await db.from('class_members').select('*',{count:'exact',head:true}).eq('class_id',cl.id);
+    studentCount[cl.teacher_id]=(studentCount[cl.teacher_id]||0)+(count||0);
+  }
+  list.innerHTML=`
+    <div class="student-row hdr" style="grid-template-columns:1fr 80px 80px 60px;">
+      <div class="col-lbl">Name / E-Mail</div>
+      <div class="col-lbl" style="justify-content:center;">Klassen</div>
+      <div class="col-lbl" style="justify-content:center;">Schüler/innen</div>
+      <div></div>
+    </div>`+
+    teachers.map(t=>{
+      const safeId=t.id.replace(/'/g,"\\'");
+      const safeName=(t.name||'').replace(/'/g,"\\'");
+      return `<div class="student-row" style="grid-template-columns:1fr 80px 80px 60px;">
+        <div>
+          <div class="s-name">${t.name||'–'} ${t.role==='admin'?'<span style="font-size:.6rem;background:#1a1a1a;color:#fff;padding:1px 6px;border-radius:8px;vertical-align:middle;">Admin</span>':''}</div>
+          <div class="s-meta">${t.email||'–'}</div>
+        </div>
+        <div class="s-sessions">${classCount[t.id]||0}</div>
+        <div class="s-sessions">${studentCount[t.id]||0}</div>
+        <div class="row-actions">
+          <button class="dot-menu" onclick="toggleMenu(event,'tmenu-${safeId}')">···</button>
+          <div class="dropdown" id="tmenu-${safeId}">
+            <div class="dropdown-item danger" onclick="confirmDeleteAccount('${safeId}','${safeName}','teacher')">✕ Account löschen</div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+}
+
+// Alle Schüler laden
+async function loadAdminStudents(){
+  const list=document.getElementById('adminStudentList');
+  const{data:students}=await db.from('profiles').select('id,name,email').eq('role','student').order('name');
+  if(!students?.length){list.innerHTML='<div class="empty-hint">Keine Schüler/innen gefunden.</div>';return;}
+  // Klassen pro Schüler
+  const{data:allMembers}=await db.from('class_members').select('user_id,class_id');
+  const{data:allClasses}=await db.from('classes').select('id,name');
+  const classMap=Object.fromEntries((allClasses||[]).map(c=>[c.id,c.name]));
+  const memberMap={};
+  (allMembers||[]).forEach(m=>{
+    if(!memberMap[m.user_id])memberMap[m.user_id]=[];
+    memberMap[m.user_id].push(classMap[m.class_id]||'?');
+  });
+  // Letzter Login
+  const{data:lastSessions}=await db.from('sessions').select('user_id,played_at').order('played_at',{ascending:false});
+  const lastMap={};
+  (lastSessions||[]).forEach(s=>{if(!lastMap[s.user_id])lastMap[s.user_id]=s.played_at;});
+
+  list.innerHTML=`
+    <div class="student-row hdr" style="grid-template-columns:1fr 1fr 100px 32px;">
+      <div class="col-lbl">Name / E-Mail</div>
+      <div class="col-lbl">Klassen</div>
+      <div class="col-lbl" style="justify-content:center;">Zuletzt aktiv</div>
+      <div></div>
+    </div>`+
+    students.map(s=>{
+      const klassen=memberMap[s.id]||[];
+      const safeId=s.id.replace(/'/g,"\\'");
+      const safeName=(s.name||'').replace(/'/g,"\\'");
+      const days=lastMap[s.id]?(Date.now()-new Date(lastMap[s.id]))/86400000:999;
+      return `<div class="student-row" style="grid-template-columns:1fr 1fr 100px 32px;">
+        <div>
+          <div class="s-name">${s.name||'–'}</div>
+          <div class="s-meta">${s.email||'–'}</div>
+        </div>
+        <div style="font-size:.75rem;color:var(--text-sec);">${klassen.length?klassen.join(', '):'<span style="color:var(--text-ter);">Keine Klasse</span>'}</div>
+        <div class="s-last ${days>=30?'warn':days===999?'never':''}" style="text-align:center;">${lastMap[s.id]?formatRelativeDate(lastMap[s.id]):'Noch nie'}</div>
+        <div class="row-actions">
+          <button class="dot-menu" onclick="toggleMenu(event,'smenu-${safeId}')">···</button>
+          <div class="dropdown" id="smenu-${safeId}">
+            <div class="dropdown-item danger" onclick="confirmDeleteAccount('${safeId}','${safeName}','student')">✕ Account löschen</div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+}
+
+// Inaktive Accounts laden
+async function loadAdminInactive(){
+  const list=document.getElementById('adminInactiveList');
+  const{data:students}=await db.from('profiles').select('id,name,email').eq('role','student').order('name');
+  const{data:allMembers}=await db.from('class_members').select('user_id');
+  const memberSet=new Set((allMembers||[]).map(m=>m.user_id));
+  const{data:lastSessions}=await db.from('sessions').select('user_id,played_at').order('played_at',{ascending:false});
+  const lastMap={};
+  (lastSessions||[]).forEach(s=>{if(!lastMap[s.user_id])lastMap[s.user_id]=s.played_at;});
+
+  const inactive=(students||[]).filter(s=>{
+    const noClass=!memberSet.has(s.id);
+    const days=lastMap[s.id]?(Date.now()-new Date(lastMap[s.id]))/86400000:999;
+    return noClass||days>=30;
+  });
+
+  if(!inactive.length){list.innerHTML='<div class="empty-hint">Keine inaktiven Accounts gefunden.</div>';return;}
+
+  list.innerHTML=`
+    <div class="student-row hdr" style="grid-template-columns:1fr 120px 120px 32px;">
+      <div class="col-lbl">Name / E-Mail</div>
+      <div class="col-lbl">Status</div>
+      <div class="col-lbl" style="justify-content:center;">Zuletzt aktiv</div>
+      <div></div>
+    </div>`+
+    inactive.map(s=>{
+      const noClass=!memberSet.has(s.id);
+      const days=lastMap[s.id]?(Date.now()-new Date(lastMap[s.id]))/86400000:999;
+      const safeId=s.id.replace(/'/g,"\\'");
+      const safeName=(s.name||'').replace(/'/g,"\\'");
+      const tags=[];
+      if(noClass)tags.push('<span style="background:var(--red-light);color:var(--red);font-size:.62rem;padding:1px 6px;border-radius:8px;">Keine Klasse</span>');
+      if(days>=30)tags.push('<span style="background:var(--orange-light);color:var(--orange);font-size:.62rem;padding:1px 6px;border-radius:8px;">30+ Tage inaktiv</span>');
+      return `<div class="student-row" style="grid-template-columns:1fr 120px 120px 32px;">
+        <div>
+          <div class="s-name">${s.name||'–'}</div>
+          <div class="s-meta">${s.email||'–'}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px;">${tags.join('')}</div>
+        <div class="s-last never" style="text-align:center;">${lastMap[s.id]?formatRelativeDate(lastMap[s.id]):'Noch nie'}</div>
+        <div class="row-actions">
+          <button class="dot-menu" onclick="toggleMenu(event,'imenu-${safeId}')">···</button>
+          <div class="dropdown" id="imenu-${safeId}">
+            <div class="dropdown-item danger" onclick="confirmDeleteAccount('${safeId}','${safeName}','student')">✕ Account löschen</div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+}
+
+// Account löschen (nur Admin)
+function confirmDeleteAccount(userId,userName,role){
+  closeMenu();
+  window._pendingDeleteAccountId=userId;
+  window._pendingDeleteAccountRole=role;
+  showPopup({
+    title:'Account löschen',
+    msg:`<strong>${userName}</strong> wirklich löschen?\n\nDabei werden unwiderruflich gelöscht:\n• Der Account\n• Alle Sessions und Reflexionen\n\nDiese Aktion kann nicht rückgängig gemacht werden.`,
+    actions:[
+      {label:'Abbrechen',style:'secondary',fn:'closePopup()'},
+      {label:'Löschen',style:'danger',fn:'closePopup();deleteAccount(window._pendingDeleteAccountId)'}
+    ]
+  });
+}
+async function deleteAccount(userId){
+  try{
+    const{data:{session}}=await db.auth.getSession();
+    const resp=await fetch(`${SUPABASE_URL}/functions/v1/delete-user`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.access_token}`},body:JSON.stringify({userIds:[userId]})});
+    if(!resp.ok)throw new Error(await resp.text());
+    loadAdminTeachers();loadAdminStudents();loadAdminInactive();
+  }catch(e){alertPopup('Fehler beim Löschen: '+e.message,'Fehler');}
+}
+
+// Neue Lehrperson erstellen
+function showNewTeacherModal(){
+  ['teacherFirstName','teacherLastName','teacherEmail','teacherPassword'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('teacherError').textContent='';
+  const btn=document.getElementById('teacherSubmitBtn');btn.disabled=false;btn.textContent='Erstellen';
+  document.getElementById('teacherModal').style.display='flex';
+  setTimeout(()=>document.getElementById('teacherFirstName').focus(),100);
+}
+function closeTeacherModal(){document.getElementById('teacherModal').style.display='none';}
+async function submitNewTeacher(){
+  const firstName=document.getElementById('teacherFirstName').value.trim();
+  const lastName=document.getElementById('teacherLastName').value.trim();
+  const name=(firstName+' '+lastName).trim();
+  const email=document.getElementById('teacherEmail').value.trim();
+  const password=document.getElementById('teacherPassword').value;
+  const errorEl=document.getElementById('teacherError');
+  const btn=document.getElementById('teacherSubmitBtn');
+  errorEl.textContent='';
+  if(!firstName){errorEl.textContent='Bitte Vornamen eingeben.';return;}
+  if(!lastName){errorEl.textContent='Bitte Nachnamen eingeben.';return;}
+  if(!email||!email.includes('@')){errorEl.textContent='Bitte gültige E-Mail eingeben.';return;}
+  if(password.length<6){errorEl.textContent='Passwort muss mind. 6 Zeichen haben.';return;}
+  btn.disabled=true;btn.textContent='…';
+  const tmp=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
+  const{data:authData,error:authError}=await tmp.auth.signUp({email,password,options:{data:{name,role:'teacher'}}});
+  if(authError){errorEl.textContent='Fehler: '+authError.message;btn.disabled=false;btn.textContent='Erstellen';return;}
+  if(!authData.user){errorEl.textContent='Account konnte nicht erstellt werden.';btn.disabled=false;btn.textContent='Erstellen';return;}
+  await new Promise(r=>setTimeout(r,800));
+  const{error:pErr}=await db.from('profiles').insert({id:authData.user.id,name,role:'teacher',email});
+  if(pErr){errorEl.textContent='Profil-Fehler: '+pErr.message;btn.disabled=false;btn.textContent='Erstellen';return;}
+  closeTeacherModal();loadAdminTeachers();
+}
 function formatRelativeDate(d){if(!d)return'–';const diff=Math.floor((Date.now()-new Date(d))/86400000);if(diff===0)return'Heute';if(diff===1)return'Gestern';if(diff<7)return`vor ${diff} Tagen`;return new Date(d).toLocaleDateString('de-CH',{day:'numeric',month:'short'});}
 function formatTime(d){if(!d)return'';const today=new Date().toISOString().split('T')[0];if(d.startsWith(today))return'Heute, '+new Date(d).toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'});return formatRelativeDate(d);}
 function showNoClassState(){document.getElementById('mainContent').style.display='none';document.getElementById('noClassHint').style.display='block';document.getElementById('topbarImport').style.display='none';document.getElementById('pageTitle').textContent='–';}
