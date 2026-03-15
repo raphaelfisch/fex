@@ -1087,6 +1087,7 @@ async function applyAdminRole(userId,newRole){
 }
 
 // Alle Schüler laden mit Sortierung
+let adminStudentSort={col:'name',dir:1};
 async function loadAdminStudents(sortCol,sortDir){
   if(sortCol!==undefined){adminStudentSort.col=sortCol;adminStudentSort.dir=sortDir;}
   const list=document.getElementById('adminStudentList');
