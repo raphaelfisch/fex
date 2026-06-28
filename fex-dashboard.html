@@ -440,6 +440,13 @@
   </div>
 </div>
 
+<!-- SCHÜLER DETAIL MODAL -->
+<div id="studentDetailModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeStudentDetail()">
+  <div style="background:#fff;border-radius:16px;padding:24px;width:100%;max-width:440px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.15);">
+    <div id="studentDetailBody"></div>
+  </div>
+</div>
+
 <!-- IMPORT MODAL -->
 <div id="importModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;align-items:center;justify-content:center;padding:20px;">
   <div style="background:#fff;border-radius:16px;padding:28px 24px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.15);">
@@ -622,12 +629,12 @@ function renderStudentList(students,todayIds,sessCount,lastMap){
     const gameName=lastGame?GAMES[lastGame.game_id]?.name||lastGame.game_id:'—';
     const safeId=s.id.replace(/'/g,"\\'");
     const safeName=s.name.replace(/'/g,"\\'");
-    return `<div class="student-row">
+    return `<div class="student-row" onclick="openStudentDetail('${safeId}')">
       <div class="avatar">${initials}</div>
       <div><div class="s-name">${s.name}</div><div class="s-meta">${gameName}</div><div class="s-last s-last-inline ${days>=5?'warn':days===999?'never':''}">${_lastMap[s.id]?formatRelativeDate(_lastMap[s.id]):'Noch nie'}</div></div>
       <div class="s-sessions">${_sessCount[s.id]||0}</div>
       <div class="s-last s-last-col ${days>=5?'warn':days===999?'never':''}">${_lastMap[s.id]?formatRelativeDate(_lastMap[s.id]):'Noch nie'}</div>
-      <div class="row-actions">
+      <div class="row-actions" onclick="event.stopPropagation()">
         <button class="dot-menu" onclick="toggleMenu(event,'menu-${safeId}')">···</button>
         <div class="dropdown" id="menu-${safeId}">
           <div class="dropdown-item" onclick="showEditStudent('${safeId}','${safeName}')">✏ Bearbeiten</div>
@@ -793,6 +800,78 @@ async function removeFromClass(studentId){
   }catch(e){alertPopup('Fehler: '+e.message,'Fehler');}
 }
 function closeMenu(){if(openMenu){document.getElementById(openMenu)?.classList.remove('open');openMenu=null;}}
+
+// ── SCHÜLER-DETAIL POPUP ──────────────────────────────────────
+function modeLabel(m){return m==='spielen'?'Spielen':'Üben';}
+
+function openStudentDetail(id){
+  closeMenu();
+  const stud=allStudents.find(s=>s.id===id);
+  if(!stud)return;
+  const initials=stud.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+  const sess=allSessions.filter(s=>s.user_id===id);
+  const refl=allReflections.filter(r=>r.user_id===id);
+  const weekAgo=Date.now()-7*86400000;
+  const weekCount=sess.filter(s=>s.played_at&&new Date(s.played_at).getTime()>=weekAgo).length;
+  const gamesPlayed=new Set(sess.map(s=>s.game_id)).size;
+  const lastActive=_lastMap[id]?formatRelativeDate(_lastMap[id]):'Noch nie';
+
+  const stat=(val,lbl)=>`<div style="flex:1;text-align:center;padding:12px 6px;background:var(--bg);border-radius:10px;">
+      <div style="font-size:1.3rem;font-weight:700;color:#1a1a1a;">${val}</div>
+      <div style="font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;color:#888;margin-top:2px;">${lbl}</div>
+    </div>`;
+
+  let sessHtml;
+  if(!sess.length){
+    sessHtml='<div class="empty-hint" style="padding:10px 0;">Noch keine Sessions.</div>';
+  }else{
+    sessHtml=sess.slice(0,6).map(s=>{
+      const g=GAMES[s.game_id]?.name||s.game_id;
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--bg);">
+        <div><div style="font-size:.88rem;font-weight:500;">${g}</div>
+        <div style="font-size:.72rem;color:#999;">${modeLabel(s.mode)} · Level ${s.level_reached||'?'}</div></div>
+        <div style="font-size:.72rem;color:#999;white-space:nowrap;">${formatRelativeDate(s.played_at)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  let reflHtml;
+  if(!refl.length){
+    reflHtml='<div class="empty-hint" style="padding:10px 0;">Noch keine Reflexionen.</div>';
+  }else{
+    reflHtml=refl.slice(0,4).map(r=>{
+      const g=GAMES[r.game_id]?.name||r.game_id||'';
+      return `<div style="padding:9px 0;border-bottom:1px solid var(--bg);">
+        <div style="font-size:.72rem;color:#999;margin-bottom:3px;">${g?g+' · ':''}${formatRelativeDate(r.created_at)}</div>
+        ${r.question?`<div style="font-size:.78rem;color:#666;">${r.question}</div>`:''}
+        <div style="font-size:.88rem;color:#1a1a1a;">„${r.answer||''}"</div>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('studentDetailBody').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:44px;height:44px;border-radius:50%;background:#e8e8e8;display:flex;align-items:center;justify-content:center;font-size:.95rem;font-weight:600;color:#666;">${initials}</div>
+        <div><div style="font-size:1.05rem;font-weight:600;">${stud.name}</div>
+        <div style="font-size:.75rem;color:#999;">Zuletzt aktiv: ${lastActive}</div></div>
+      </div>
+      <button onclick="closeStudentDetail()" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#999;line-height:1;">✕</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:20px;">
+      ${stat(sess.length,'Sessions')}
+      ${stat(weekCount,'Diese Woche')}
+      ${stat(gamesPlayed,'Spiele')}
+    </div>
+    <div style="font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#888;margin-bottom:4px;">Letzte Sessions</div>
+    ${sessHtml}
+    <div style="font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#888;margin:18px 0 4px;">Letzte Reflexionen</div>
+    ${reflHtml}`;
+
+  document.getElementById('studentDetailModal').style.display='flex';
+}
+
+function closeStudentDetail(){document.getElementById('studentDetailModal').style.display='none';}
 
 // ── KLASSE ERSTELLEN / LÖSCHEN ────────────────────────────────
 function showNewClassModal(){
