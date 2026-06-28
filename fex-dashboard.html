@@ -447,6 +447,13 @@
   </div>
 </div>
 
+<!-- SCHÜLER FORTSCHRITT MODAL -->
+<div id="studentProgressModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeProgressDetail()">
+  <div style="background:#fff;border-radius:16px;padding:24px;width:100%;max-width:460px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.15);">
+    <div id="studentProgressBody"></div>
+  </div>
+</div>
+
 <!-- IMPORT MODAL -->
 <div id="importModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;align-items:center;justify-content:center;padding:20px;">
   <div style="background:#fff;border-radius:16px;padding:28px 24px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.15);">
@@ -678,7 +685,7 @@ function renderProgressGrid(students,sessions){
   });
   grid.innerHTML=data.map(s=>{
     const ef=efMap[s.id]||{ag:0,inh:0,flex:0};
-    return `<div class="prog-card">
+    return `<div class="prog-card" onclick="openProgressDetail('${s.id}')">
       <div class="prog-name">${s.name}</div>
       <div class="ef-row">
         <div class="ef-cell"><div class="ef-lbl">AG</div><div class="ef-val ${lvlCls(ef.ag)}">${lvlTxt(ef.ag)}</div></div>
@@ -872,6 +879,115 @@ function openStudentDetail(id){
 }
 
 function closeStudentDetail(){document.getElementById('studentDetailModal').style.display='none';}
+
+// ── SCHÜLER-FORTSCHRITT POPUP ─────────────────────────────────
+const EF_DIMS=[['ag','Arbeitsgedächtnis','#2e7d32'],['inh','Inhibitorische Kontrolle','#c8761a'],['flex','Kognitive Flexibilität','#3a6ea5']];
+
+function efGames(efKey){
+  return Object.entries(GAMES).filter(([id,g])=>g.ef===efKey).map(([id,g])=>({id,name:g.name}));
+}
+
+function buildProgressCurve(daySeries){
+  // daySeries: { 'YYYY-MM-DD': {ag:avg, inh:avg, flex:avg} } für Tage mit Daten
+  const days=Object.keys(daySeries).sort();
+  const W=412,H=180,L=30,R=14,T=14,B=26;
+  const pW=W-L-R,pH=H-T-B;
+  const yFor=lvl=>T+(6-lvl)/5*pH;
+  const xFor=i=>L+(days.length===1?pW/2:i/(days.length-1)*pW);
+  let svg=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;font-family:'DM Sans',sans-serif;">`;
+  // Gitter + Level-Beschriftung
+  for(let l=1;l<=6;l++){
+    const y=yFor(l);
+    svg+=`<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" stroke="#eee" stroke-width="1"/>`;
+    svg+=`<text x="${L-6}" y="${y+3}" text-anchor="end" font-size="8" fill="#bbb">L${l}</text>`;
+  }
+  // Linien je EF
+  EF_DIMS.forEach(([key,,color])=>{
+    const pts=[];
+    days.forEach((d,i)=>{const v=daySeries[d][key];if(v!=null)pts.push([xFor(i),yFor(v)]);});
+    if(pts.length>1)svg+=`<polyline points="${pts.map(p=>p[0]+','+p[1]).join(' ')}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    pts.forEach(p=>{svg+=`<circle cx="${p[0]}" cy="${p[1]}" r="2.6" fill="${color}"/>`;});
+  });
+  // x-Achsen-Beschriftung (erstes + letztes Datum)
+  const fmt=d=>new Date(d).toLocaleDateString('de-CH',{day:'numeric',month:'short'});
+  svg+=`<text x="${L}" y="${H-8}" text-anchor="start" font-size="8" fill="#999">${fmt(days[0])}</text>`;
+  if(days.length>1)svg+=`<text x="${W-R}" y="${H-8}" text-anchor="end" font-size="8" fill="#999">${fmt(days[days.length-1])}</text>`;
+  svg+=`</svg>`;
+  return svg;
+}
+
+function openProgressDetail(id){
+  closeMenu();
+  const stud=allStudents.find(s=>s.id===id);
+  if(!stud)return;
+  const initials=stud.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+  const lastActive=_lastMap[id]?formatRelativeDate(_lastMap[id]):'Noch nie';
+
+  // Nur Spielmodus-Sessions mit erreichtem Level (konsistent zur Karte)
+  const sess=allSessions.filter(s=>s.user_id===id&&s.mode==='spielen'&&s.level_reached);
+
+  // Tagesdurchschnitt pro EF-Dimension
+  const byDay={};
+  sess.forEach(s=>{
+    const ef=GAMES[s.game_id]?.ef;if(!ef)return;
+    const day=(s.played_at||'').slice(0,10);if(!day)return;
+    (byDay[day]=byDay[day]||{}); (byDay[day][ef]=byDay[day][ef]||[]).push(s.level_reached);
+  });
+  const daySeries={};
+  Object.keys(byDay).forEach(d=>{
+    daySeries[d]={};
+    ['ag','inh','flex'].forEach(k=>{
+      const arr=byDay[d][k];
+      daySeries[d][k]=arr&&arr.length?arr.reduce((a,b)=>a+b,0)/arr.length:null;
+    });
+  });
+  const distinctDays=Object.keys(daySeries).length;
+
+  // Kurvenbereich (ab 3 Tagen) oder Hinweis
+  let curveHtml;
+  if(distinctDays>=3){
+    const legend=EF_DIMS.map(([,lbl,c])=>`<span style="display:inline-flex;align-items:center;gap:4px;font-size:.7rem;color:#666;"><span style="width:9px;height:9px;border-radius:50%;background:${c};display:inline-block;"></span>${lbl}</span>`).join('<span style="width:12px;display:inline-block;"></span>');
+    curveHtml=`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">${legend}</div>${buildProgressCurve(daySeries)}`;
+  }else{
+    curveHtml=`<div class="empty-hint" style="padding:18px 12px;text-align:center;font-size:.82rem;">Verlaufskurve erscheint, sobald an mindestens 3 verschiedenen Tagen gespielt wurde.</div>`;
+  }
+
+  // EF-Aufschlüsselung
+  const efSections=EF_DIMS.map(([key,lbl,color])=>{
+    const games=efGames(key);
+    let best=0;
+    const rows=games.map(g=>{
+      const gs=sess.filter(s=>s.game_id===g.id);
+      const gBest=gs.reduce((m,s)=>Math.max(m,s.level_reached||0),0);
+      best=Math.max(best,gBest);
+      if(!gs.length){
+        return `<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:.82rem;color:#bbb;"><span>${g.name}</span><span>noch nicht gespielt</span></div>`;
+      }
+      return `<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:.84rem;"><span>${g.name}</span><span style="color:#666;">L${gBest} · ${gs.length} Session${gs.length>1?'s':''}</span></div>`;
+    }).join('');
+    return `<div style="margin-top:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bg);padding-bottom:4px;">
+        <div style="display:flex;align-items:center;gap:7px;font-size:.82rem;font-weight:600;"><span style="width:9px;height:9px;border-radius:50%;background:${color};display:inline-block;"></span>${lbl}</div>
+        <div style="font-size:.9rem;font-weight:700;color:${best?color:'#bbb'};">${best?'L'+best:'–'}</div>
+      </div>${rows}</div>`;
+  }).join('');
+
+  document.getElementById('studentProgressBody').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:44px;height:44px;border-radius:50%;background:#e8e8e8;display:flex;align-items:center;justify-content:center;font-size:.95rem;font-weight:600;color:#666;">${initials}</div>
+        <div><div style="font-size:1.05rem;font-weight:600;">${stud.name}</div>
+        <div style="font-size:.75rem;color:#999;">Fortschritt · zuletzt aktiv: ${lastActive}</div></div>
+      </div>
+      <button onclick="closeProgressDetail()" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#999;line-height:1;">✕</button>
+    </div>
+    ${curveHtml}
+    ${efSections}`;
+
+  document.getElementById('studentProgressModal').style.display='flex';
+}
+
+function closeProgressDetail(){document.getElementById('studentProgressModal').style.display='none';}
 
 // ── KLASSE ERSTELLEN / LÖSCHEN ────────────────────────────────
 function showNewClassModal(){
